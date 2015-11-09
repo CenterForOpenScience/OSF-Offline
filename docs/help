@@ -1,0 +1,31 @@
+1) asyncio.sleep(RECHECK_TIME)                                                                                          DONE
+2) instead of checking everything in poll, I can use logging updates code                                               NO
+3) directory structure                                                                                                  DONE
+4) clean git repo                                                                                                       DONE
+5) asyncio.Queue for local (can yield from asyncio.Queue.pop )
+6) asyncio.Queue for remote (can yield from asyncio.Queue.pop)
+    structure is watch -> do stuff :: do stuff <- watch
+7) make MainWindow main thing. all else run as children.
+    will still run
+8) flake8
+9) snakecase(underscore everything)                                                                                     DONE
+10) all file names should be lower case
+11) object shouldn't be name of file
+12) packge structure: single folder has all code.                                                                       DONE
+	src:
+	tests:
+	docs:
+	.gitignore:
+	setup.py
+13) ioloop issues in windows
+14) check windows as soon as possible
+15) setup.py
+	
+
+THINGS TO DO:
+1) editing file bug
+2) pyinstaller - turn into a binary
+3) application versioning and updating
+4) list of updates to api
+5) ignore list (list of regex) can be customizable
+        can reset

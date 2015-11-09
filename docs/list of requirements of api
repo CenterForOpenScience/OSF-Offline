@@ -1,0 +1,16 @@
+NOTE: item 1 can be done via v1 api and is a work in progress for v2 api
+NOTE: items 2-4 can be done via waterbutler endpoints
+NOTE: item 5 exists already, however, the value is None most of the time (even once the file has been edited multiple times on the OSF) The backup is to use waterbutler's revisions endpoint, which works like a charm
+NOTE: item 6 is a documented issue that transcends nodes. It is being worked on.
+NOTE: https://github.com/CenterForOpenScience/osf.io/issues/3309 shows what the current work in progress is on the api
+
+1) determining which nodes are top-level nodes
+
+2) creating files/folders on the OSF
+3) renaming files/folder on OSF
+4) updating files on OSF
+
+5) timestamp for file/folder
+
+6) deleting nodes is not currently working via v2 api. You can delete nodes, but they still show up on a get request afterwards.
+
