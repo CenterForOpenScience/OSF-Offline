@@ -1,0 +1,7 @@
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource>
+        <file alias="cos_logo.png">images/cos_logo.png</file>
+    </qresource>
+</RCC>
+
