@@ -63,3 +63,4 @@ tests/test_projects/contains_bad_permissions_file/copy1
 .pynb_checkpoints/
 .idea/
 __pycache__/
+dumbdir/

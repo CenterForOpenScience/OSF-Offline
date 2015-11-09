@@ -1,0 +1,11 @@
+Polling
+These go through a hierarchy. At the very top is the check_osf.
+check_osf : if connection error occurs, then just ignore it, sleep, and restart
+One thing we cannot do is try and get only a limited number of any of the remote lists. Because this would incorrectly
+start trying to make remote nodes,files, folders.
+check_node: if a single check_node fails, then we just ignore it
+check_file_folder: if a single one fails, we ignore it.
+
+
+Observer
+GUI
