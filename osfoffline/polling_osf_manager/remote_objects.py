@@ -73,7 +73,7 @@ class RemoteFileFolder(RemoteObject):
     def validate(self):
         super().validate()
         assert self.provider
-        assert self.move_url if not self.id  else True
+        assert self.move_url if not self.id else True
         assert self.delete_url if not self.id else True
 
 
@@ -105,7 +105,6 @@ class RemoteFile(RemoteFileFolder):
         self.size = remote_dict['attributes']['size']
         self.last_modified_string = remote_dict['attributes'].get('date_modified')
 
-
         self.validate()
 
     @property
@@ -122,8 +121,6 @@ class RemoteFile(RemoteFileFolder):
         assert self.delete_url
         assert self.size >= 0
         assert self.overwrite_url
-
-
 
 
 def dict_to_remote_object(remote_dict):

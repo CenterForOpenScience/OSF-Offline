@@ -1,18 +1,18 @@
-import logging
-import logging.config
 import os
-import colorlog
+
+# Just to insure requirement
+import colorlog  # noqa
 
 from appdirs import user_log_dir
 
 from .app_settings import DEV_MODE, PROJECT_NAME, PROJECT_AUTHOR
 
-### Where to store project-level logs
+# Where to store project-level logs
 PROJECT_LOG_DIR = user_log_dir(appname=PROJECT_NAME, appauthor=PROJECT_AUTHOR)
 PROJECT_LOG_FILE = os.path.join(PROJECT_LOG_DIR, 'osfoffline.log')
 
 
-### Logging configuration
+# Logging configuration
 CONSOLE_FORMATTER = {
     '()': 'colorlog.ColoredFormatter',
     'format': '%(cyan)s[%(asctime)s]%(log_color)s[%(threadName)s][%(filename)s][%(levelname)s][%(name)s]: %(reset)s%(message)s'

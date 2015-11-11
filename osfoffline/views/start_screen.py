@@ -1,9 +1,7 @@
 import asyncio
-import concurrent
 import logging
 
 import aiohttp
-import furl
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog, QMessageBox
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
@@ -12,10 +10,8 @@ from osfoffline import settings
 from osfoffline.database_manager.db import session
 from osfoffline.database_manager.utils import save
 from osfoffline.database_manager.models import User
-from osfoffline.exceptions.osf_exceptions import OSFAuthError
 from osfoffline.polling_osf_manager.osf_query import OSFQuery
 from osfoffline.polling_osf_manager.remote_objects import RemoteUser
-from osfoffline.utils.debug import debug_trace
 from osfoffline.views.rsc.startscreen import Ui_startscreen
 
 

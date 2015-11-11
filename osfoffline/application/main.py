@@ -1,23 +1,25 @@
 #!/usr/bin/env python
-import os
 import logging
+import os
 
-from appdirs import user_log_dir
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
-from PyQt5.QtWidgets import (QApplication, QDialog)
-from osfoffline.views.preferences import Preferences
-from osfoffline.views.system_tray import SystemTray
-from osfoffline.views.start_screen import StartScreen
-import osfoffline.alerts as AlertHandler
-from PyQt5.QtWidgets import (QApplication, QDialog, QFileDialog)
+
 from PyQt5.QtCore import pyqtSignal
-from osfoffline.database_manager.models import User
-from osfoffline.database_manager.db import session
-from osfoffline.database_manager.utils import save
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QFileDialog
+
 from osfoffline.application.background import BackgroundWorker
-from osfoffline.utils.validators import validate_containing_folder
+from osfoffline.database_manager.db import session
+from osfoffline.database_manager.models import User
+from osfoffline.database_manager.utils import save
 from osfoffline.utils.debug import debug_trace
+from osfoffline.utils.validators import validate_containing_folder
+from osfoffline.views.preferences import Preferences
+from osfoffline.views.start_screen import StartScreen
+from osfoffline.views.system_tray import SystemTray
+import osfoffline.alerts as AlertHandler
 
 
 # RUN_PATH = "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"

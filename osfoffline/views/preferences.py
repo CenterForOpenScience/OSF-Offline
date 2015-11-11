@@ -1,18 +1,25 @@
 import os
 import logging
 
-from PyQt5.QtWidgets import (QDialog, QFileDialog, QTreeWidgetItem, QMessageBox)
-from PyQt5.QtCore import QCoreApplication, Qt
+import requests
+
+from PyQt5.QtCore import QCoreApplication
+from PyQt5.QtCore import Qt
 from PyQt5.QtCore import pyqtSignal
-from osfoffline.views.rsc.preferences_rc import Ui_Preferences  # REQUIRED FOR GUI
+from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtWidgets import QTreeWidgetItem
+
 from osfoffline.database_manager.db import session
 from osfoffline.database_manager.models import User
+from osfoffline.database_manager.utils import save
 from osfoffline.polling_osf_manager.api_url_builder import api_url_for, NODES, USERS
 from osfoffline.polling_osf_manager.remote_objects import RemoteNode
-from osfoffline.database_manager.utils import save
-import requests
-import osfoffline.alerts as AlertHandler
 from osfoffline.utils import path
+from osfoffline.views.rsc.preferences_rc import Ui_Preferences  # REQUIRED FOR GUI
+import osfoffline.alerts as AlertHandler
+
 
 class Preferences(QDialog):
     """

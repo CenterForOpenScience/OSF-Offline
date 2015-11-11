@@ -117,6 +117,7 @@ class ProperPath(object):
     def __repr__(self):
         return self.full_path
 
+
 def make_folder_name(name, node_id=None):
     """ Helper function to generate non-conflicting folder names
     :param str name:    Name of folder on OSF
@@ -127,6 +128,7 @@ def make_folder_name(name, node_id=None):
         return '{} - {}'.format(name, node_id)
     else:
         return name
+
 
 def ensure_folders(path):
     """Ensure that the specified folder (and all folders in path) exists"""
