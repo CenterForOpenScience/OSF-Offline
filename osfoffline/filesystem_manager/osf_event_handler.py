@@ -82,27 +82,13 @@ class OSFEventHandler(FileSystemEventHandler):
         elif src_path != dest_path:
             # check if file already exists in this moved location. If so, delete it from db.
             try:
-                new_parent_item = self._get_parent_item_from_path(dest_path)
-            except ItemNotInDB:
-                curr = item.node
-                running = True
-                while (running):
-                    if not os.path.isdir(curr.path):
-                        return
-
-                    if curr.top_level:
-                        running = False
-                    else:
-                        curr = curr.node
-                raise
-            try:
                 item_to_replace = self._get_item_by_path(dest_path)
                 session.delete(item_to_replace)
                 save(session)
             except ItemNotInDB:
                 logging.info('file does not already exist in moved destination: {}'.format(dest_path.full_path))
 
-            # new_parent_item = self._get_parent_item_from_path(dest_path)
+            new_parent_item = self._get_parent_item_from_path(dest_path)
 
             # move item
 
@@ -236,8 +222,7 @@ class OSFEventHandler(FileSystemEventHandler):
 
     def dispatch(self, event):
         # basically, ignore all events that occur for 'Components' file or folder
-        if self._event_is_for_components_file_folder(event):
-            AlertHandler.warn('Cannot have a custom file or folder named Components')
+        if self._event_is_for_reserved_word(event) or self._event_is_an_illegal_rename(event):
             return
 
         _method_map = {
@@ -284,12 +269,34 @@ class OSFEventHandler(FileSystemEventHandler):
                 return file_folder
         raise ItemNotInDB('item has path: {}'.format(path.full_path))
 
-    def _event_is_for_components_file_folder(self, event):
+    def _event_is_for_reserved_word(self, event):
         if ProperPath(event.src_path, True).name == 'Components':
+            print('Cannot rename the Components folder')
             return True
         try:
             if ProperPath(event.dest_path, True).name == 'Components':
+                AlertHandler.warn('Cannot have a custom file or folder named Components')
+                print('Cannot have a custom file or folder named Components')
                 return True
             return False
         except AttributeError:
             return False
+
+    def _event_is_an_illegal_rename(self, event):
+        src_path = ProperPath(event.src_path, event.is_directory)
+        dest_path = ProperPath(event.dest_path, event.is_directory)
+        item = self._get_item_by_path(src_path)
+        try:
+            new_parent_item = self._get_parent_item_from_path(dest_path)
+        except ItemNotInDB:
+            curr = item.node
+            running = True
+            while (running):
+                if not os.path.isdir(curr.path):
+                    return
+
+                if curr.top_level:
+                    running = False
+                else:
+                    curr = curr.node
+            raise
