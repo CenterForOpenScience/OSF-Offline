@@ -22,6 +22,8 @@ from osfoffline.utils.debug import debug_trace
 
 # RUN_PATH = "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
 
+logger = logging.getLogger(__name__)
+
 
 class OSFApp(QDialog):
     login_signal = pyqtSignal()
@@ -98,7 +100,7 @@ class OSFApp(QDialog):
         return True
 
     def start(self):
-        logging.debug('Start in main called.')
+        logger.debug('Start in main called.')
 
         # todo: HANDLE LOGIN FAILED
         try:
@@ -114,7 +116,7 @@ class OSFApp(QDialog):
 
         containing_folder = os.path.dirname(user.osf_local_folder_path)
         while not validate_containing_folder(containing_folder):
-            logging.warning('Invalid containing folder: {}'.format(containing_folder))
+            logger.warning('Invalid containing folder: {}'.format(containing_folder))
             AlertHandler.warn('Invalid containing folder. Please choose another.')
             containing_folder = os.path.abspath(self.set_containing_folder_initial())
 
@@ -127,56 +129,57 @@ class OSFApp(QDialog):
             os.makedirs(user.osf_local_folder_path)
 
         self.start_tray_signal.emit()
-        logging.debug('starting background worker from main.start')
-        # fix the multithreading problem
-        try:
-            self.background_worker = BackgroundWorker()
-        except AttributeError:
-            pass
+        logger.debug('starting background worker from main.start')
+
+        self.background_worker = BackgroundWorker()
         self.background_worker.start()
 
     def resume(self):
-        logging.debug('resuming')
+        logger.debug('resuming')
         # todo: properly pause the background thread
         # I am recreating the background thread everytime for now.
         # I was unable to correctly pause the background thread
         # thus took this route for now.
-        if self._can_restart_background_worker():
-            # stop previous
-            self.background_worker.stop()
-            self.background_worker.join()
+        if self.background_worker.is_alive():
+            raise RuntimeError('Resume called without first calling pause')
+            # self.background_worker.stop()
+        # self.background_worker.start()
+        self.background_worker = BackgroundWorker()
+        # if self._can_restart_background_worker():
+        #     # stop previous
+        #     self.background_worker.stop()
+        #     self.background_worker.join()
 
-            # start new
-            self.background_worker = BackgroundWorker()
-            self.background_worker.start()
-        else:
-            # todo: what goes here, if anything?
-            logging.info('wanted to but could not resume background worker')
+        #     # start new
+        #     self.background_worker = BackgroundWorker()
+        #     self.background_worker.start()
+        # else:
+        #     # todo: what goes here, if anything?
+        #     logger.info('wanted to but could not resume background worker')
 
     def pause(self):
-        logging.debug('pausing')
+        logger.debug('pausing')
         if self.background_worker and self.background_worker.is_alive():
-            logging.debug('pausing background worker')
             self.background_worker.stop()
-            logging.debug('background worker stopped')
-            self.background_worker.join()
-            logging.debug('paused background worker')
 
     def quit(self):
         try:
-            self.background_worker.pause_background_tasks()
-            self.background_worker.stop()
+            if self.background_worker.is_alive():
+                print('Stopping background worker')
+                self.background_worker.stop()
 
+            print('Setting user session')
             user = session.query(User).filter(User.logged_in).one()
             save(session, user)
             session.close()
-
+        finally:
+            print('Exiting application')
             QApplication.instance().quit()
-        except Exception as e:
-            # FIXME: Address this issue
-            logging.warning('quit broke. stopping anyways. Exception was {}'.format(e))
-            # quit() stops gui and then quits application
-            QApplication.instance().quit()
+        # except Exception as e:
+        #     # FIXME: Address this issue
+        #     logger.warning('quit broke. stopping anyways. Exception was {}'.format(e))
+        #     # quit() stops gui and then quits application
+        #     QApplication.instance().quit()
 
     def _logout_all_users(self):
         for user in session.query(User):
@@ -199,9 +202,9 @@ class OSFApp(QDialog):
         self.login_signal.emit()
 
     def open_preferences(self):
-        logging.debug('pausing for preference modification')
+        logger.debug('pausing for preference modification')
         self.pause()
-        logging.debug('opening preferences')
+        logger.debug('opening preferences')
         self.preferences.open_window(Preferences.GENERAL)
 
     def start_about_screen(self):
