@@ -1,26 +1,30 @@
 #!/usr/bin/env python
-import os
 import logging
+import os
 
-from appdirs import user_log_dir
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
-from PyQt5.QtWidgets import (QApplication, QDialog)
-from osfoffline.views.preferences import Preferences
-from osfoffline.views.system_tray import SystemTray
-from osfoffline.views.start_screen import StartScreen
-import osfoffline.alerts as AlertHandler
-from PyQt5.QtWidgets import (QApplication, QDialog, QFileDialog)
+
 from PyQt5.QtCore import pyqtSignal
-from osfoffline.database_manager.models import User
-from osfoffline.database_manager.db import session
-from osfoffline.database_manager.utils import save
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QFileDialog
+
 from osfoffline.application.background import BackgroundWorker
-from osfoffline.utils.validators import validate_containing_folder
+from osfoffline.database_manager.db import session
+from osfoffline.database_manager.models import User
+from osfoffline.database_manager.utils import save
 from osfoffline.utils.debug import debug_trace
+from osfoffline.utils.validators import validate_containing_folder
+from osfoffline.views.preferences import Preferences
+from osfoffline.views.start_screen import StartScreen
+from osfoffline.views.system_tray import SystemTray
+import osfoffline.alerts as AlertHandler
 
 
 # RUN_PATH = "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Run"
+
+logger = logging.getLogger(__name__)
 
 
 class OSFApp(QDialog):
@@ -98,7 +102,7 @@ class OSFApp(QDialog):
         return True
 
     def start(self):
-        logging.debug('Start in main called.')
+        logger.debug('Start in main called.')
 
         # todo: HANDLE LOGIN FAILED
         try:
@@ -114,7 +118,7 @@ class OSFApp(QDialog):
 
         containing_folder = os.path.dirname(user.osf_local_folder_path)
         while not validate_containing_folder(containing_folder):
-            logging.warning('Invalid containing folder: {}'.format(containing_folder))
+            logger.warning('Invalid containing folder: {}'.format(containing_folder))
             AlertHandler.warn('Invalid containing folder. Please choose another.')
             containing_folder = os.path.abspath(self.set_containing_folder_initial())
 
@@ -127,55 +131,36 @@ class OSFApp(QDialog):
             os.makedirs(user.osf_local_folder_path)
 
         self.start_tray_signal.emit()
-        logging.debug('starting background worker from main.start')
-        # fix the multithreading problem
-        try:
-            self.background_worker = BackgroundWorker()
-        except AttributeError:
-            pass
+        logger.debug('starting background worker from main.start')
+
+        self.background_worker = BackgroundWorker()
         self.background_worker.start()
 
     def resume(self):
-        logging.debug('resuming')
-        # todo: properly pause the background thread
-        # I am recreating the background thread everytime for now.
-        # I was unable to correctly pause the background thread
-        # thus took this route for now.
-        if self._can_restart_background_worker():
-            # stop previous
-            self.background_worker.stop()
-            self.background_worker.join()
+        logger.debug('resuming')
+        if self.background_worker.is_alive():
+            raise RuntimeError('Resume called without first calling pause')
 
-            # start new
-            self.background_worker = BackgroundWorker()
-            self.background_worker.start()
-        else:
-            # todo: what goes here, if anything?
-            logging.info('wanted to but could not resume background worker')
+        self.background_worker = BackgroundWorker()
+        self.background_worker.start()
 
     def pause(self):
-        logging.debug('pausing')
+        logger.debug('pausing')
         if self.background_worker and self.background_worker.is_alive():
-            logging.debug('pausing background worker')
             self.background_worker.stop()
-            logging.debug('background worker stopped')
-            self.background_worker.join()
-            logging.debug('paused background worker')
 
     def quit(self):
         try:
-            self.background_worker.pause_background_tasks()
-            self.background_worker.stop()
+            if self.background_worker.is_alive():
+                logger.info('Stopping background worker')
+                self.background_worker.stop()
 
+            logger.info('Saving user data')
             user = session.query(User).filter(User.logged_in).one()
             save(session, user)
             session.close()
-
-            QApplication.instance().quit()
-        except Exception as e:
-            # FIXME: Address this issue
-            logging.warning('quit broke. stopping anyways. Exception was {}'.format(e))
-            # quit() stops gui and then quits application
+        finally:
+            logger.info('Quitting application')
             QApplication.instance().quit()
 
     def _logout_all_users(self):
@@ -199,9 +184,9 @@ class OSFApp(QDialog):
         self.login_signal.emit()
 
     def open_preferences(self):
-        logging.debug('pausing for preference modification')
+        logger.debug('pausing for preference modification')
         self.pause()
-        logging.debug('opening preferences')
+        logger.debug('opening preferences')
         self.preferences.open_window(Preferences.GENERAL)
 
     def start_about_screen(self):

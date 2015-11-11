@@ -4,6 +4,7 @@ import logging
 from osfoffline.database_manager.db import session
 from osfoffline.settings import PROJECT_DB_DIR
 
+
 def save(session, *items_to_save):
     for item in items_to_save:
         session.add(item)
@@ -31,13 +32,10 @@ def session_scope():
 def remove_db():
     shutil.rmtree(PROJECT_DB_DIR)
 
-
-
     # def close_session_safe(session):
     #     try:
     #         session.close()
     #     except:
-
 
     # def get_current_user(self, session):
     #     user = None
