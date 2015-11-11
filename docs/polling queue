@@ -1,0 +1,21 @@
+a diff pattern could be, a polling thing checks, and then if there is some action
+that needs to be taken, it sends that action
+
+ - as you update the db, you can send a signal out to do
+-
+
+
+ - while comparing osf and db, you can update remote. you can also update db.
+ - AS you check, you can make a queue of update_fs events. This will include upd
+ating, renaming, moving, deleting.
+ - Once the check_osf is done, you can THEN, do the update_fs events one by one
+as they are in the queue.
+ - Items in the queue will be fs_event items. fs_event items will have
+ - Each fs_event will actually just be a watchdog.events type. It will basically tell you what the src_path and dest_path are. NOT GOOD ENOUGH.
+ - Will have to make custom event type.
+        - input will be db_model that requires the updating.
+                - CREATE(new_model, remote_file_folder)
+                        - if node/folder then create folder. if file then download file.
+                - DELETE(model_that is being deleted, remote)
+                - RENAME
+                - MODIFIED

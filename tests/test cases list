@@ -1,0 +1,72 @@
+
+1) create project online                                                                                                GOOD
+2) create component online                                                                                              GOOD
+3) create folder online for osfstorage for project                                                                      GOOD
+4) create file online for osfstorage for project                                                                        GOOD
+
+5) delete project online                                                                                                GOOD
+6) delete component online                                                                                              API NODE/CHILDREN SHOWS DELETED NODES
+7) delete folder online for osfstorage for project                                                                      GOOD
+8) delete file online for osfstorage for project                                                                        GOOD
+
+for 9) perhaps can use parent.put(new_node)
+9) create project local                                                                                                 GOOD
+10) create folder local for osfstorage for project                                                                      GOOD
+12) create file local for osfstorage for project                                                                        GOOD
+
+13) delete project local                                                                                                API ISSUE????
+14) delete component local                                                                                              API ISSUE????
+15) delete folder local for osfstorage for project                                                                      GOOD??newly broken??
+16) delete file local for osfstorage for project                                                                        GOOD??newly broken??
+
+
+17) modify remote project                                                                                               GOOD
+18) modify remote component                                                                                             GOOD
+19) modify remote folder for project                                                                                    GOOD
+20) modify remote file                                                                                                  GOODish
+
+21) modify local project                                                                                                GOOD (but fails when file is being  modified in older name folder)
+22) modify local component                                                                                              GOOD (but fails when file is being  modified in older name folder)
+23) modify local folder
+24) modify local file
+
+
+
+SECOND PASS (focus on local creation/deletion/movement/modification)
+LOCAL NODE CREATION (COMPONENTS ARE STILL BROKEN!!!!!!!!!!!!!!!!!!)
+1) create project                                                                                                       GOOD
+2) create component                                                                                                     BROKEN
+3) create adjacent project                                                                                              GOOD
+4) create inner component                                                                                               BROKEN
+5) create inner inner component                                                                                         BROKEN
+7) create inner inner inner component                                                                                   BROKEN
+8) create create project A with 2 adjacent components                                                                   .
+9) create project A and then component A inside it
+10) create project A with component A with component A
+11) create file in project space                                                                                        GOOD
+12) create 2 directories with same name in project space
+
+LOCAL FOLDER CREATION (inside osf storage)
+1) create folder in project                                                                                             GOOD
+2) create folder in level 1 component                                                                                   GOOD
+3) create folder in level 2 component                                                                                   GOOD
+4) create folder in level 1 folder in project                                                                           GOOD
+5) create folder in level 1 folder in level 1 component                                                                 GOOD
+7) create folder in level 1 folder in level 2 component                                                                 GOOD
+8) create folder in level 2 folder in project                                                                           GOOD
+9) create folder in level 2 folder in level 1 component                                                                 GOOD
+10) create folder in level 2 folder in level 2 component                                                                GOOD
+11) create 3 folders named same thing within each other                                                                 GOOD
+
+LOCAL FILE CREATION (inside osf storage)
+1) create file in project
+4) create file in level 1 folder in project
+4) create file in level 2 folder in project
+2) create file in level 3 folder in level 1 component
+
+5) create file in level 1 folder in level 1 component
+8) create file in level 2 folder in project
+9) create file in level 2 folder in level 1 component
+10) create file in level 2 folder in level 2 component                                                                GOOD
+11) create 3 file named same thing within each other                                                                 GOOD
+
