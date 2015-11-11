@@ -1,6 +1,6 @@
 import os
 import asyncio
-import concurrent
+import time
 import logging
 
 import aiohttp
@@ -50,10 +50,37 @@ class Poll(object):
         logger.info('OSF polling requested stopped.')
 
     def handle_exception(self, future):
-        raise future.exception()
+        # Note: The actual futures never exit, if they do an exception is raised
+        try:
+            raise future.exception()
+        except (aiohttp.ClientError, asyncio.TimeoutError):
+            logger.error('Unable to connect to the internet')
+            AlertHandler.warn('Unable to connection to OSF, we\'ll try again later.')
+        except asyncio.CancelledError:
+            # Cancellations just mean this thread is exiting
+            return
+
+        # Make sure all our jobs are cancelled
+        if future == self.poll_job:
+            self.process_job.cancel()
+        else:
+            self.poll_job.cancel()
+
+        logger.info('Restarting polling in 5 seconds')
+        # Finally restart our watcher thread in 5 seconds
+        self._loop.call_later(5, self.start)
 
     def start(self):
-        remote_user = self._loop.run_until_complete(self.get_remote_user())
+        sleep_time = 0
+        while True:
+            try:
+                remote_user = self._loop.run_until_complete(self.get_remote_user())
+            except aiohttp.ClientError:
+                logger.error('Unable to fetch user from OSF, sleeping for {} seconds'.format(sleep_time))
+                sleep_time += 5
+                time.sleep(sleep_time)
+            else:
+                break
 
         self.queue = asyncio.Queue(maxsize=15)
 
@@ -79,11 +106,6 @@ class Poll(object):
         logger.debug(url)
         # Note: Add retries/ catch for unable to connect
         return (yield from self.osf_query.make_request(url, get_json=True))['data']
-        # try:
-        #     future.set_result(resp['data'])
-        #     break
-        # except (concurrent.futures._base.TimeoutError, aiohttp.errors.ClientTimeoutError):
-        #     AlertHandler.warn("Bad Internet Connection")
 
     def get_id(self, item):
         """
@@ -172,11 +194,7 @@ class Poll(object):
             for local, remote in paired_projects:
                 if not remote or remote.id not in sync_list:
                     continue
-                try:
-                    yield from self.check_node(local, remote, local_parent_node=None)
-                except (aiohttp.errors.ClientConnectionError, aiohttp.errors.ClientTimeoutError,
-                        concurrent.futures._base.TimeoutError):
-                    AlertHandler.warn('Bad Internet Connection')
+                yield from self.check_node(local, remote, local_parent_node=None)
 
             yield from self.queue.join()
 
@@ -216,32 +234,17 @@ class Poll(object):
                 yield from self.modify_local_node(local_node, remote_node)
 
         # handle file_folders for node
-        try:
-            yield from self.check_file_folder(local_node, remote_node)
-        except (
-                aiohttp.errors.ClientConnectionError, aiohttp.errors.ClientTimeoutError,
-                concurrent.futures._base.TimeoutError) as e:
-            AlertHandler.warn('Bad Internet Connection')
+        yield from self.check_file_folder(local_node, remote_node)
 
         # ensure that local node has Components folder
         yield from self._ensure_components_folder(local_node)
 
         # recursively handle node's children
-        try:
-            remote_children = yield from self.osf_query.get_child_nodes(remote_node)
-        except (
-                aiohttp.errors.ClientConnectionError, aiohttp.errors.ClientTimeoutError,
-                concurrent.futures._base.TimeoutError):
-            AlertHandler.warn('Bad Internet Connection')
-            return
+        remote_children = yield from self.osf_query.get_child_nodes(remote_node)
 
         local_remote_nodes = self.make_local_remote_tuple_list(local_node.child_nodes, remote_children)
         for local, remote in local_remote_nodes:
-            try:
-                yield from self.check_node(local, remote, local_parent_node=local_node)
-            except (aiohttp.errors.ClientConnectionError, aiohttp.errors.ClientTimeoutError,
-                    concurrent.futures._base.TimeoutError):
-                AlertHandler.warn('Bad Internet Connection')
+            yield from self.check_node(local, remote, local_parent_node=local_node)
 
     @asyncio.coroutine
     def check_file_folder(self, local_node, remote_node):
@@ -251,12 +254,6 @@ class Poll(object):
 
         try:
             remote_node_files = yield from self.osf_query.get_child_files(remote_node)
-
-        except (
-                aiohttp.errors.ClientConnectionError, aiohttp.errors.ClientTimeoutError,
-                concurrent.futures._base.TimeoutError):
-            AlertHandler.warn('Bad Internet Connection')
-            return
         except aiohttp.errors.HttpBadRequest:
             AlertHandler.warn(
                 'could not access files for node {}. Node might have been deleted.'.format(remote_node.name))
@@ -270,11 +267,6 @@ class Poll(object):
 
         try:
             remote_node_top_level_file_folders = yield from self.osf_query.get_child_files(osfstorage_folder)
-        except (
-                aiohttp.errors.ClientConnectionError, aiohttp.errors.ClientTimeoutError,
-                concurrent.futures._base.TimeoutError):
-            AlertHandler.warn('Bad Internet Connection')
-            return
         except aiohttp.errors.HttpBadRequest:
             AlertHandler.warn(
                 'could not access files for node {}. Node might have been deleted.'.format(remote_node.name))
@@ -286,16 +278,12 @@ class Poll(object):
         )
 
         for local, remote in local_remote_files:
-            try:
-                yield from self._check_file_folder(
-                    local,
-                    remote,
-                    local_parent_file_folder=None,
-                    local_node=local_node
-                )
-            except (aiohttp.errors.ClientConnectionError, aiohttp.errors.ClientTimeoutError,
-                    concurrent.futures._base.TimeoutError):
-                AlertHandler.warn('Bad Internet Connection')
+            yield from self._check_file_folder(
+                local,
+                remote,
+                local_parent_file_folder=None,
+                local_node=local_node
+            )
 
     @asyncio.coroutine
     def _check_file_folder(self,
@@ -373,26 +361,17 @@ class Poll(object):
         # recursively handle folder's children
         if local_file_folder.is_folder:
 
-            try:
-                remote_children = yield from self.osf_query.get_child_files(remote_file_folder)
-            except (aiohttp.errors.ClientConnectionError, aiohttp.errors.ClientTimeoutError,
-                    concurrent.futures._base.TimeoutError):
-                AlertHandler.warn('Bad Internet Connection')
-                return
+            remote_children = yield from self.osf_query.get_child_files(remote_file_folder)
 
             local_remote_file_folders = self.make_local_remote_tuple_list(local_file_folder.files, remote_children)
 
             for local, remote in local_remote_file_folders:
-                try:
-                    yield from self._check_file_folder(
-                        local,
-                        remote,
-                        local_parent_file_folder=local_file_folder,
-                        local_node=local_node
-                    )
-                except (aiohttp.errors.ClientConnectionError, aiohttp.errors.ClientTimeoutError,
-                        concurrent.futures._base.TimeoutError):
-                    AlertHandler.warn('Bad Internet Connection')
+                yield from self._check_file_folder(
+                    local,
+                    remote,
+                    local_parent_file_folder=local_file_folder,
+                    local_node=local_node
+                )
 
                     # if we are unable to get children, then we do not try to get and manipulate children
 
