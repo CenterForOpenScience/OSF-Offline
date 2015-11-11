@@ -64,3 +64,5 @@ tests/test_projects/contains_bad_permissions_file/copy1
 .idea/
 __pycache__/
 dumbdir/
+
+osfoffline/settings/local.py
