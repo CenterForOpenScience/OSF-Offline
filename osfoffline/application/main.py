@@ -152,21 +152,16 @@ class OSFApp(QDialog):
     def quit(self):
         try:
             if self.background_worker.is_alive():
-                print('Stopping background worker')
+                logger.info('Stopping background worker')
                 self.background_worker.stop()
 
-            print('Setting user session')
+            logger.info('Saving user data')
             user = session.query(User).filter(User.logged_in).one()
             save(session, user)
             session.close()
         finally:
-            print('Exiting application')
+            logger.info('Quitting application')
             QApplication.instance().quit()
-        # except Exception as e:
-        #     # FIXME: Address this issue
-        #     logger.warning('quit broke. stopping anyways. Exception was {}'.format(e))
-        #     # quit() stops gui and then quits application
-        #     QApplication.instance().quit()
 
     def _logout_all_users(self):
         for user in session.query(User):
