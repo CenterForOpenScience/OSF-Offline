@@ -4,6 +4,7 @@ storing the data into the db, and then sending a request to the remote server.
 """
 import asyncio
 import logging
+import os
 
 from watchdog.events import FileSystemEventHandler, DirModifiedEvent, DirCreatedEvent, FileCreatedEvent
 from osfoffline.database_manager.models import Node, File, User
@@ -64,7 +65,9 @@ class OSFEventHandler(FileSystemEventHandler):
         item = self._get_item_by_path(src_path)
 
         if isinstance(item, Node):
-            AlertHandler.warn('Cannot manipulate components locally. {} will stop syncing'.format(item.title))
+            if item.title != dest_path.name:
+                AlertHandler.warn('Cannot manipulate components locally. {} will stop syncing'.format(item.title))
+                # os.rename(str(dest_path), item.path)
             return
 
         # File
@@ -79,13 +82,27 @@ class OSFEventHandler(FileSystemEventHandler):
         elif src_path != dest_path:
             # check if file already exists in this moved location. If so, delete it from db.
             try:
+                new_parent_item = self._get_parent_item_from_path(dest_path)
+            except ItemNotInDB:
+                curr = item.node
+                running = True
+                while (running):
+                    if not os.path.isdir(curr.path):
+                        return
+
+                    if curr.top_level:
+                        running = False
+                    else:
+                        curr = curr.node
+                raise
+            try:
                 item_to_replace = self._get_item_by_path(dest_path)
                 session.delete(item_to_replace)
                 save(session)
             except ItemNotInDB:
                 logging.info('file does not already exist in moved destination: {}'.format(dest_path.full_path))
 
-            new_parent_item = self._get_parent_item_from_path(dest_path)
+            # new_parent_item = self._get_parent_item_from_path(dest_path)
 
             # move item
 
@@ -169,6 +186,7 @@ class OSFEventHandler(FileSystemEventHandler):
         """
 
         if isinstance(event, DirModifiedEvent):
+            # AlertHandler.warn('Modifying folders is not recommended')
             return
         src_path = ProperPath(event.src_path, event.is_directory)
 

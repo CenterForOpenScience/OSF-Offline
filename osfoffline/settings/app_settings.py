@@ -30,4 +30,4 @@ else:
     POLL_DELAY = 5 * 60  # seconds
 
 ### Time to keep alert messages on screen (in milliseconds); may not be configurable on all platforms
-ALERT_TIME = 1000  # ms
+ALERT_TIME = 10000  # ms
