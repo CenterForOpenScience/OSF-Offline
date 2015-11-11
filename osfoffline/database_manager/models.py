@@ -9,6 +9,7 @@ from sqlalchemy.orm import relationship, backref, validates
 from sqlalchemy import Column, Integer, Boolean, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
+from osfoffline.utils.path import make_folder_name
 
 Base = declarative_base()
 
@@ -100,10 +101,9 @@ class Node(Base):
         # +os.path.sep+ instead of os.path.join: http://stackoverflow.com/a/14504695
 
         if self.parent:
-            return os.path.join(self.parent.path, 'Components', self.title)
+            return os.path.join(self.parent.path, 'Components', make_folder_name(self.title, node_id=self.osf_id))
         else:
-
-            return os.path.join(self.user.osf_local_folder_path, self.title)
+            return os.path.join(self.user.osf_local_folder_path, make_folder_name(self.title, node_id=self.osf_id))
 
     def locally_create_children(self):
         self.locally_created = True
@@ -212,10 +212,16 @@ class File(Base):
         """Recursively walk up the path of the file/folder. Top level file/folder joins with the path of the containing node.
         """
         # +os.path.sep+ instead of os.path.join: http://stackoverflow.com/a/14504695
-        if self.parent:
-            return os.path.join(self.parent.path, self.name)
+        if self.type == self.FILE:
+            if self.parent:
+                return os.path.join(self.parent.path, self.name)
+            else:
+                return os.path.join(self.node.path, self.name)
         else:
-            return os.path.join(self.node.path, self.name)
+            if self.parent:
+                return os.path.join(self.parent.path, make_folder_name(self.name, node_id=self.osf_id))
+            else:
+                return os.path.join(self.node.path, make_folder_name(self.name, node_id=self.osf_id))
 
     def update_hash(self, block_size=2 ** 20):
         if self.is_file:

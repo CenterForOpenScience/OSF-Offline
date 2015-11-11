@@ -712,8 +712,9 @@ class Poll(object):
     @asyncio.coroutine
     def _ensure_components_folder(self, local_node):
         assert isinstance(local_node, Node)
-        yield from self.queue.put(
-            CreateFolder(
-                os.path.join(local_node.path, 'Components')
+        if local_node.child_nodes:
+            yield from self.queue.put(
+                CreateFolder(
+                    os.path.join(local_node.path, 'Components')
+                )
             )
-        )

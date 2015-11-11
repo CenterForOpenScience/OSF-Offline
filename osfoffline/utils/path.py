@@ -120,6 +120,7 @@ class ProperPath(object):
 
 def make_folder_name(name, node_id=None):
     """ Helper function to generate non-conflicting folder names
+
     :param str name:    Name of folder on OSF
     :param str node_id: Optional - osf_id of folder
     :return:            Generated approximately unique name

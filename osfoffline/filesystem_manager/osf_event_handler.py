@@ -180,7 +180,7 @@ class OSFEventHandler(FileSystemEventHandler):
             item = self._get_item_by_path(src_path)
         except ItemNotInDB:
             # todo: create file folder
-            logging.warning('file was modified but not already in db. create it in db.')
+            logging.warning('file {} was modified but not already in db. create it in db.'.format(src_path))
             return  # todo: remove this once above is implemented
 
         # update hash
