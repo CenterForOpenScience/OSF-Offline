@@ -138,26 +138,11 @@ class OSFApp(QDialog):
 
     def resume(self):
         logger.debug('resuming')
-        # todo: properly pause the background thread
-        # I am recreating the background thread everytime for now.
-        # I was unable to correctly pause the background thread
-        # thus took this route for now.
         if self.background_worker.is_alive():
             raise RuntimeError('Resume called without first calling pause')
-            # self.background_worker.stop()
-        # self.background_worker.start()
-        self.background_worker = BackgroundWorker()
-        # if self._can_restart_background_worker():
-        #     # stop previous
-        #     self.background_worker.stop()
-        #     self.background_worker.join()
 
-        #     # start new
-        #     self.background_worker = BackgroundWorker()
-        #     self.background_worker.start()
-        # else:
-        #     # todo: what goes here, if anything?
-        #     logger.info('wanted to but could not resume background worker')
+        self.background_worker = BackgroundWorker()
+        self.background_worker.start()
 
     def pause(self):
         logger.debug('pausing')
