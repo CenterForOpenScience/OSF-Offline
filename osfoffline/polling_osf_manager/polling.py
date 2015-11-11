@@ -31,11 +31,16 @@ class Poll(object):
         self.user = user
 
         self._loop = loop
-        # self.queue = asyncio.Queue()
+        self.poll_job = None
+        self.process_job = None
         self.osf_query = OSFQuery(loop=self._loop, oauth_token=self.user.oauth_token)
 
     def stop(self):
         logger.info('OSF polling requested to stop.')
+
+        # Stop was called before start could complete
+        if not self.poll_job or not self.process_job:
+            return
 
         # If these futures are complete an exception has been raised in them
         if self.poll_job.done():
@@ -71,16 +76,7 @@ class Poll(object):
         self._loop.call_later(5, self.start)
 
     def start(self):
-        sleep_time = 0
-        while True:
-            try:
-                remote_user = self._loop.run_until_complete(self.get_remote_user())
-            except aiohttp.ClientError:
-                logger.error('Unable to fetch user from OSF, sleeping for {} seconds'.format(sleep_time))
-                sleep_time += 5
-                time.sleep(sleep_time)
-            else:
-                break
+        remote_user = self._loop.run_until_complete(self.get_remote_user())
 
         self.queue = asyncio.Queue(maxsize=15)
 
@@ -104,8 +100,15 @@ class Poll(object):
     def get_remote_user(self):
         url = api_url_for(USERS, user_id=self.user.osf_id)
         logger.debug(url)
-        # Note: Add retries/ catch for unable to connect
-        return (yield from self.osf_query.make_request(url, get_json=True))['data']
+        sleep_time = 0
+        while True:
+            try:
+                return (yield from self.osf_query.make_request(url, get_json=True))['data']
+            except aiohttp.ClientError:
+                pass
+            sleep_time += 5
+            logger.error('Unable to fetch user from OSF, sleeping for {} seconds'.format(sleep_time))
+            yield from asyncio.sleep(sleep_time)
 
     def get_id(self, item):
         """
