@@ -1,8 +1,10 @@
+import signal
 import sys
 
-from PyQt5.QtWidgets import (QApplication, QMessageBox, QSystemTrayIcon)
-from osfoffline.application.main import OSFApp
+from PyQt5.QtWidgets import QApplication, QMessageBox, QSystemTrayIcon
+
 from osfoffline import utils
+from osfoffline.application.main import OSFApp
 
 
 def running_warning():
@@ -39,6 +41,11 @@ def start():
     QApplication.setQuitOnLastWindowClosed(False)
 
     osf = OSFApp()
+
+    # Properly response to sigints from the console
+    # TODO Maybe only enable in debug mode
+    signal.signal(signal.SIGINT, lambda *args: osf.quit())
+
     osf.start()
 
     osf.hide()
