@@ -6,7 +6,9 @@ import asyncio
 import logging
 import os
 
+from sqlalchemy.exc import SQLAlchemyError
 from watchdog.events import FileSystemEventHandler, DirModifiedEvent, DirCreatedEvent, FileCreatedEvent
+
 from osfoffline.database_manager.models import Node, File, User
 from osfoffline.database_manager.db import session
 from osfoffline.database_manager.utils import save
@@ -181,7 +183,7 @@ class OSFEventHandler(FileSystemEventHandler):
             item = self._get_item_by_path(src_path)
         except ItemNotInDB:
             # todo: create file folder
-            logging.warning('file was modified but not already in db. create it in db.')
+            logging.warning('file {} was modified but not already in db. create it in db.'.format(src_path))
             return  # todo: remove this once above is implemented
 
         # update hash
@@ -207,18 +209,25 @@ class OSFEventHandler(FileSystemEventHandler):
         # get item
         item = self._get_item_by_path(src_path)
 
-        # put item in delete state
-        item.locally_deleted = True
-
-        # nodes cannot be deleted online. THUS, delete it inside database. It will be recreated locally.
-        if isinstance(item, Node):
-            session.delete(item)
-            save(session)
-            return
-
-        save(session, item)
-
-        logging.info('{} set to be deleted'.format(src_path.full_path))
+        # put item in delete state after waiting a second and
+        # checking to make sure the file was actually deleted
+        yield from asyncio.sleep(1)
+        if not os.path.exists(item.path):
+            item.locally_deleted = True
+            # nodes cannot be deleted online. THUS, delete it inside database. It will be recreated locally.
+            if isinstance(item, Node):
+                session.delete(item)
+                try:
+                    save(session)
+                except SQLAlchemyError as e:
+                    logging.exception('Error deleting node from database.')
+                return
+            try:
+                save(session, item)
+            except SQLAlchemyError as e:
+                logging.exception('Error deleting node from database.')
+            else:
+                logging.info('{} set to be deleted'.format(src_path.full_path))
 
     def dispatch(self, event):
         # basically, ignore all events that occur for 'Components' file or folder

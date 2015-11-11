@@ -5,9 +5,26 @@ from osfoffline.application.main import OSFApp
 from osfoffline import utils
 
 
+def running_warning():
+    warn_app = QApplication(sys.argv)
+    QMessageBox.information(
+        None,
+        "Systray",
+        "OSF-Offline is already running. Check out the system tray."
+    )
+    warn_app.quit()
+    sys.exit(0)
+
+
 def start():
     # Start logging all events
     utils.start_app_logging()
+    if sys.platform == 'win32':
+        from server import SingleInstance
+        single_app = SingleInstance()
+
+        if single_app.already_running():
+            running_warning()
 
     app = QApplication(sys.argv)
 

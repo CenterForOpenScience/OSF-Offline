@@ -9,6 +9,7 @@ from sqlalchemy.orm import relationship, backref, validates
 from sqlalchemy import Column, Integer, Boolean, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
+from osfoffline.utils.path import make_folder_name
 
 Base = declarative_base()
 
@@ -100,10 +101,9 @@ class Node(Base):
         # +os.path.sep+ instead of os.path.join: http://stackoverflow.com/a/14504695
 
         if self.parent:
-            return os.path.join(self.parent.path, 'Components', self.title)
+            return os.path.join(self.parent.path, 'Components', make_folder_name(self.title, node_id=self.osf_id))
         else:
-
-            return os.path.join(self.user.osf_local_folder_path, self.title)
+            return os.path.join(self.user.osf_local_folder_path, make_folder_name(self.title, node_id=self.osf_id))
 
     def locally_create_children(self):
         self.locally_created = True
