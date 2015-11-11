@@ -167,6 +167,8 @@ class OSFApp(QDialog):
             self.background_worker.pause_background_tasks()
             self.background_worker.stop()
 
+            user = session.query(User).filter(User.logged_in).one()
+            save(session, user)
             session.close()
 
             QApplication.instance().quit()

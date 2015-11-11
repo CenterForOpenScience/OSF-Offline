@@ -1,9 +1,8 @@
 from contextlib import contextmanager
 import shutil
-
+import logging
 from osfoffline.database_manager.db import session
 from osfoffline.settings import PROJECT_DB_DIR
-
 
 def save(session, *items_to_save):
     for item in items_to_save:
@@ -11,6 +10,7 @@ def save(session, *items_to_save):
     try:
         session.commit()
     except:
+        logging.exception('Error saving to the database')
         session.rollback()
         raise
 

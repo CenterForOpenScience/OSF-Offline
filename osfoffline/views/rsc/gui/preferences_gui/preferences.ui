@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>590</width>
-    <height>320</height>
+    <height>356</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -108,8 +108,8 @@
            <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:11pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;/home/himanshu/somefolder/My Project&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8.25pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-size:11pt;&quot;&gt;/home/himanshu/somefolder/My Project&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
           </property>
          </widget>
         </widget>
@@ -122,32 +122,19 @@ p, li { white-space: pre-wrap; }
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>10</y>
-           <width>581</width>
+           <y>0</y>
+           <width>541</width>
            <height>51</height>
           </rect>
          </property>
          <property name="title">
           <string>Account</string>
          </property>
-         <widget class="QGroupBox" name="groupBox_3">
-          <property name="geometry">
-           <rect>
-            <x>280</x>
-            <y>50</y>
-            <width>561</width>
-            <height>51</height>
-           </rect>
-          </property>
-          <property name="title">
-           <string>Account</string>
-          </property>
-         </widget>
          <widget class="QLabel" name="label">
           <property name="geometry">
            <rect>
-            <x>30</x>
-            <y>16</y>
+            <x>20</x>
+            <y>20</y>
             <width>411</width>
             <height>31</height>
            </rect>
@@ -160,7 +147,7 @@ p, li { white-space: pre-wrap; }
           <property name="geometry">
            <rect>
             <x>440</x>
-            <y>10</y>
+            <y>20</y>
             <width>99</width>
             <height>31</height>
            </rect>
@@ -174,9 +161,9 @@ p, li { white-space: pre-wrap; }
          <property name="geometry">
           <rect>
            <x>10</x>
-           <y>70</y>
-           <width>561</width>
-           <height>211</height>
+           <y>60</y>
+           <width>541</width>
+           <height>241</height>
           </rect>
          </property>
          <property name="title">
@@ -186,9 +173,9 @@ p, li { white-space: pre-wrap; }
           <property name="geometry">
            <rect>
             <x>10</x>
-            <y>30</y>
-            <width>541</width>
-            <height>161</height>
+            <y>20</y>
+            <width>521</width>
+            <height>211</height>
            </rect>
           </property>
           <property name="title">
@@ -197,8 +184,8 @@ p, li { white-space: pre-wrap; }
           <widget class="QPushButton" name="changeFolderButton_2">
            <property name="geometry">
             <rect>
-             <x>430</x>
-             <y>50</y>
+             <x>420</x>
+             <y>100</y>
              <width>99</width>
              <height>31</height>
             </rect>
@@ -211,9 +198,9 @@ p, li { white-space: pre-wrap; }
            <property name="geometry">
             <rect>
              <x>10</x>
-             <y>20</y>
+             <y>60</y>
              <width>311</width>
-             <height>131</height>
+             <height>151</height>
             </rect>
            </property>
            <property name="toolTipDuration">
@@ -221,18 +208,41 @@ p, li { white-space: pre-wrap; }
            </property>
            <column>
             <property name="text">
-             <string>Projects</string>
+             <string>Sync</string>
             </property>
            </column>
            <column>
             <property name="text">
-             <string>Sync</string>
+             <string>Projects</string>
             </property>
            </column>
           </widget>
-          <zorder>changeFolderButton_2</zorder>
-          <zorder>treeWidget</zorder>
-          <zorder>accountLogOutButton_2</zorder>
+          <widget class="QPushButton" name="pushButton">
+           <property name="geometry">
+            <rect>
+             <x>10</x>
+             <y>20</y>
+             <width>115</width>
+             <height>32</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Sync All</string>
+           </property>
+          </widget>
+          <widget class="QPushButton" name="pushButton_2">
+           <property name="geometry">
+            <rect>
+             <x>130</x>
+             <y>20</y>
+             <width>115</width>
+             <height>32</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Sync None</string>
+           </property>
+          </widget>
          </widget>
         </widget>
        </widget>
@@ -253,10 +263,10 @@ p, li { white-space: pre-wrap; }
           <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:11pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;This is OSF OFFLINE. Please go ahead and use it and make more software based off of it. Please and Thank You. &lt;/p&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;© Center for Open Science&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8.25pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-size:11pt;&quot;&gt;This is OSF OFFLINE. Please go ahead and use it and make more software based off of it. Please and Thank You. &lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Ubuntu'; font-size:11pt;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-size:11pt;&quot;&gt;© Center for Open Science&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
         </widget>
        </widget>

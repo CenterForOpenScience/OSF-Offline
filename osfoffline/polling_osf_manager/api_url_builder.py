@@ -29,6 +29,9 @@ def api_url_for(endpoint_type, related_type=None, **kwargs):
         if related_type:
             assert related_type in [NODES]
             base.path.segments.append(related_type)
+            user_nodes = _ensure_trailing_slash(base.url)
+            user_nodes += '?filter[registration]=false'
+            return user_nodes
     elif endpoint_type == NODES:
 
         base.path.segments.extend(['v2', NODES])

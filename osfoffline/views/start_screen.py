@@ -82,7 +82,7 @@ class StartScreen(QDialog):
                 user = User(
                     full_name=remote_user.name,
                     osf_id=remote_user.id,
-                    osf_login='',  # TODO: email goes here when more auth methods are added, not currently returned by APIv2
+                    # osf_login='',  # TODO: email goes here when more auth methods are added, not currently returned by APIv2
                     osf_local_folder_path='',
                     oauth_token=personal_access_token,
                 )

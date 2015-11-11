@@ -49,7 +49,7 @@ class SystemTray(QDialog):
         self.tray_icon.setContextMenu(self.tray_icon_menu)
 
         # todo: do we have a better icon for use with desktop apps?
-        icon = QIcon(':/cos_logo.png')
+        icon = QIcon(':/cos_logo_backup.png')
         self.tray_icon.setIcon(icon)
 
     def start(self):

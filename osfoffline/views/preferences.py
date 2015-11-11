@@ -1,7 +1,7 @@
 import os
 import logging
 
-from PyQt5.QtWidgets import (QDialog, QFileDialog, QTreeWidgetItem)
+from PyQt5.QtWidgets import (QDialog, QFileDialog, QTreeWidgetItem, QMessageBox)
 from PyQt5.QtCore import QCoreApplication, Qt
 from PyQt5.QtCore import pyqtSignal
 from osfoffline.views.rsc.preferences_rc import Ui_Preferences  # REQUIRED FOR GUI
@@ -9,9 +9,10 @@ from osfoffline.database_manager.db import session
 from osfoffline.database_manager.models import User
 from osfoffline.polling_osf_manager.api_url_builder import api_url_for, NODES, USERS
 from osfoffline.polling_osf_manager.remote_objects import RemoteNode
+from osfoffline.database_manager.utils import save
 import requests
 import osfoffline.alerts as AlertHandler
-
+from osfoffline.utils import path
 
 class Preferences(QDialog):
     """
@@ -21,8 +22,8 @@ class Preferences(QDialog):
     OSF = 1
     ABOUT = 2
 
-    PROJECT_NAME_COLUMN = 0
-    PROJECT_SYNC_COLUMN = 1
+    PROJECT_NAME_COLUMN = 1
+    PROJECT_SYNC_COLUMN = 0
 
     preferences_closed_signal = pyqtSignal()
     containing_folder_updated_signal = pyqtSignal((str,))
@@ -35,13 +36,41 @@ class Preferences(QDialog):
         self.preferences_window.setupUi(self)
 
         self.preferences_window.changeFolderButton_2.clicked.connect(self.update_sync_nodes)
+        self.preferences_window.pushButton.clicked.connect(self.sync_all)
+        self.preferences_window.pushButton_2.clicked.connect(self.sync_none)
+
         self.tree_items = []
+        self.checked_items = []
         self.setup_slots()
+
+    def get_guid_list(self):
+        guid_list = []
+        for tree_item, node_id in self.tree_items:
+            if tree_item.checkState(self.PROJECT_SYNC_COLUMN) == Qt.Checked:
+                guid_list.append(node_id)
+        return guid_list
 
     def closeEvent(self, event):
         logging.debug('closed...... preferences....')
         self.preferences_closed_signal.emit()
-        event.accept()
+        guid_list = self.get_guid_list()
+        if guid_list != self.checked_items:
+            reply = QMessageBox()
+            reply.setText('Unsaved changes')
+            reply.setIcon(QMessageBox.Warning)
+            reply.setInformativeText('You have unsaved changes to your synced projects.\n\n '
+                                     'Please review your changes and press \'update\' if you would like to save them. \n\n  '
+                                     'Are you sure you would like to leave without saving? \n')
+            default = reply.addButton('Exit without saving', QMessageBox.YesRole)
+            reply.addButton('Review changes', QMessageBox.NoRole)
+            reply.setDefaultButton(default)
+            test = reply.exec_()
+            if test == 0:
+                event.accept()
+            else:
+                event.ignore()
+        else:
+            event.accept()
         # if self.isVisible():
         #     self.hide()
         #     event.ignore()
@@ -90,14 +119,19 @@ class Preferences(QDialog):
 
     def update_sync_nodes(self):
         user = session.query(User).filter(User.logged_in).one()
-        guid_list = []
-
-        for tree_item in self.tree_items:
-            for name, id in [(node.name, node.id) for node in self.remote_top_level_nodes]:
-                if name == tree_item.text(self.PROJECT_NAME_COLUMN):
-                    if tree_item.checkState(self.PROJECT_SYNC_COLUMN) == Qt.Checked:
-                        guid_list.append(id)
+        guid_list = self.get_guid_list()
+        # FIXME: This needs a try-except block but is waiting on a preferences refactor to be merged
         user.guid_for_top_level_nodes_to_sync = guid_list
+        save(session, user)
+        self.checked_items = guid_list
+
+    def sync_all(self):
+        for tree_item, node_id in self.tree_items:
+            tree_item.setCheckState(self.PROJECT_SYNC_COLUMN, Qt.Checked)
+
+    def sync_none(self):
+        for tree_item, node_id in self.tree_items:
+            tree_item.setCheckState(self.PROJECT_SYNC_COLUMN, Qt.Unchecked)
 
     def open_window(self, tab=GENERAL):
         if self.isVisible():
@@ -131,13 +165,16 @@ class Preferences(QDialog):
         for node in self.remote_top_level_nodes:
             tree_item = QTreeWidgetItem(self.preferences_window.treeWidget)
             tree_item.setCheckState(self.PROJECT_SYNC_COLUMN, Qt.Unchecked)
-            tree_item.setText(self.PROJECT_NAME_COLUMN, _translate("Preferences", node.name))
+            tree_item.setText(self.PROJECT_NAME_COLUMN, _translate("Preferences", path.make_folder_name(node.name, node_id=node.id)))
 
             if node.id in user.guid_for_top_level_nodes_to_sync:
                 tree_item.setCheckState(self.PROJECT_SYNC_COLUMN, Qt.Checked)
-            self.preferences_window.treeWidget.resizeColumnToContents(self.PROJECT_NAME_COLUMN)
+                if node.id not in self.checked_items:
+                    self.checked_items.append(node.id)
 
-            self.tree_items.append(tree_item)
+            self.tree_items.append((tree_item, node.id))
+        self.preferences_window.treeWidget.resizeColumnToContents(self.PROJECT_SYNC_COLUMN)
+        self.preferences_window.treeWidget.resizeColumnToContents(self.PROJECT_NAME_COLUMN)
 
     def get_remote_top_level_nodes(self):
         remote_top_level_nodes = []
