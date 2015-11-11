@@ -1,6 +1,5 @@
 import asyncio
 import concurrent
-from flask import request
 import logging
 
 import aiohttp
