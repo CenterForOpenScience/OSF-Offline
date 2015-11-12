@@ -12,7 +12,7 @@ from watchdog.events import FileSystemEventHandler, DirModifiedEvent, DirCreated
 from osfoffline.database_manager.models import Node, File, User
 from osfoffline.database_manager.db import session
 from osfoffline.database_manager.utils import save
-from osfoffline.utils.path import ProperPath
+from osfoffline.utils.path import ProperPath, make_folder_name
 from osfoffline.exceptions.item_exceptions import ItemNotInDB
 import osfoffline.alerts as AlertHandler
 
@@ -231,8 +231,11 @@ class OSFEventHandler(FileSystemEventHandler):
 
     def dispatch(self, event):
         # basically, ignore all events that occur for 'Components' file or folder
-        if self._event_is_for_reserved_word(event) or self._event_is_an_illegal_rename(event):
+        if self._is_illegal(event):
             return
+
+        # if self._event_is_for_reserved_word(event):
+        #     return
 
         _method_map = {
             EVENT_TYPE_MODIFIED: self.on_modified,
@@ -278,34 +281,85 @@ class OSFEventHandler(FileSystemEventHandler):
                 return file_folder
         raise ItemNotInDB('item has path: {}'.format(path.full_path))
 
-    def _event_is_for_reserved_word(self, event):
-        if ProperPath(event.src_path, True).name == 'Components':
-            print('Cannot rename the Components folder')
-            return True
-        try:
-            if ProperPath(event.dest_path, True).name == 'Components':
-                AlertHandler.warn('Cannot have a custom file or folder named Components')
-                print('Cannot have a custom file or folder named Components')
-                return True
-            return False
-        except AttributeError:
-            return False
+    # def _event_is_for_reserved_word(self, event):
+    #     if ProperPath(event.src_path, True).name == 'Components':
+    #         print('Cannot rename the Components folder')
+    #         return True
+    #     try:
+    #         if ProperPath(event.dest_path, True).name == 'Components':
+    #             AlertHandler.warn('Cannot have a custom file or folder named Components')
+    #             print('Cannot have a custom file or folder named Components')
+    #             return True
+    #         return False
+    #     except AttributeError:
+    #         return False
+    #
+    # def _event_is_an_illegal_rename(self, event):
+    #     src_path = ProperPath(event.src_path, event.is_directory)
+    #     try:
+    #         dest_path = ProperPath(event.dest_path, event.is_directory)
+    #     except AttributeError:
+    #         return False
+    #     try:
+    #         item = self._get_item_by_path(src_path)
+    #     except ItemNotInDB:
+    #         return True
+    #     try:
+    #         new_parent_item = self._get_parent_item_from_path(dest_path)
+    #     except ItemNotInDB:
+    #         if isinstance(item, Node):
+    #             if make_folder_name(item.title, item.osf_id) != dest_path.name:
+    #                 AlertHandler.warn('Cannot manipulate components locally. {} will stop syncing'.format(item.title))
+    #                 print('Cannot manipulate components locally. {} will stop syncing'.format(item.title))
+    #         else:
+    #             curr = item.node
+    #             running = True
+    #             while (running):
+    #                 if not os.path.isdir(curr.path):
+    #                     return True
+    #                 if curr.top_level:
+    #                     running = False
+    #                 else:
+    #                     curr = curr.node
+    #             raise
+    #     return False
 
-    def _event_is_an_illegal_rename(self, event):
+    def _is_illegal(self, event):
+        reserved_words = ['Components']
         src_path = ProperPath(event.src_path, event.is_directory)
-        dest_path = ProperPath(event.dest_path, event.is_directory)
-        item = self._get_item_by_path(src_path)
         try:
-            new_parent_item = self._get_parent_item_from_path(dest_path)
-        except ItemNotInDB:
-            curr = item.node
-            running = True
-            while (running):
-                if not os.path.isdir(curr.path):
-                    return
-
-                if curr.top_level:
-                    running = False
+            dest_path = ProperPath(event.dest_path, event.is_directory)
+            try:
+                item = self._get_item_by_path(src_path)
+            except ItemNotInDB:
+                item = self._get_parent_item_from_path(src_path)
+                assert isinstance(item, Node)
+            try:
+                new_parent_item = self._get_parent_item_from_path(dest_path)
+            except ItemNotInDB:
+                if isinstance(item, Node):
+                    if make_folder_name(item.title, item.osf_id) != dest_path.name:
+                        AlertHandler.warn('Cannot manipulate components locally. {} will stop syncing'.format(item.title))
+                        print('Cannot manipulate components locally. {} will stop syncing'.format(item.title))
                 else:
-                    curr = curr.node
-            raise
+                    curr = item.node
+                    running = True
+                    while (running):
+                        if not os.path.isdir(curr.path):
+                            return True
+                        if curr.top_level:
+                            running = False
+                        else:
+                            curr = curr.node
+                    raise
+            if dest_path.name in reserved_words:
+                AlertHandler.warn('Cannot have a custom file or folder named {}'.format(dest_path.name))
+                print('Cannot have a custom file or folder named {}'.format(dest_path.name))
+                return True
+        except AttributeError:
+            # Fixme: Need to figure out what this except should do
+            pass
+        if src_path.name in reserved_words:
+            AlertHandler.warn('Cannot rename the {} folder'.format(src_path.name))
+            print('Cannot rename the {} folder'.format(src_path.name))
+            return True
