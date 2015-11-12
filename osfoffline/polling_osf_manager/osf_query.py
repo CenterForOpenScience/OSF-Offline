@@ -20,10 +20,11 @@ ACCEPTED = 202
 
 
 class OSFQuery(object):
-    def __init__(self, loop, oauth_token):
+    def __init__(self, loop, oauth_token, limit=5):
         self.headers = {
             'Authorization': 'Bearer {}'.format(oauth_token),
         }
+        self.throttler = asyncio.Semaphore(limit)
         self.request_session = aiohttp.ClientSession(loop=loop, headers=self.headers)
 
     @asyncio.coroutine
@@ -141,7 +142,7 @@ class OSFQuery(object):
         file_size = os.path.getsize(local_file.path)
 
         resp_json = yield from self.make_request(files_url, method="PUT", params=params, data=file_data, get_json=True,
-            headers={'Content-Length': str(file_size)}, local_file=local_file, locks=[file_lock, asyncio.Lock()])
+            headers={'Content-Length': str(file_size)}, local_file=local_file, lock=file_lock)
         AlertHandler.info(local_file.name, AlertHandler.UPLOAD)
 
         return RemoteFile(resp_json['data'])
@@ -251,7 +252,10 @@ class OSFQuery(object):
         resp.close()
 
     @asyncio.coroutine
-    def make_request(self, url, method=None, params=None, expects=None, get_json=False, timeout=180, data=None, headers=None, local_file=None, locks=None):
+    def make_request(self, url, method=None, params=None, expects=None, get_json=False,
+                     timeout=180, data=None, headers=None, local_file=None, lock=None):
+        yield from self.throttler.acquire()
+
         if method is None:
             method = 'GET'
 
@@ -263,27 +267,14 @@ class OSFQuery(object):
             data=data
         )
         try:
-            if locks and local_file:
-                asyncio.async(check_for_changes(local_file, locks))
-                response = yield from request
-                yield from locks[1].acquire()
+            if lock and local_file:
+                check_task = asyncio.ensure_future(check_for_changes(local_file, lock))
+                response = yield from asyncio.wait_for(request, timeout)
+                check_task.cancel()
             else:
-                response = yield from request
-        except (aiohttp.errors.ClientTimeoutError, aiohttp.errors.ClientConnectionError,
-                concurrent.futures._base.TimeoutError):
-            # internally, if a timeout occurs, aiohttp tries up to 3 times. thus we already technically have retries in.
-            AlertHandler.warn("Bad Internet Connection")
-            raise
-        except aiohttp.errors.BadHttpMessage:
-            raise
-        except aiohttp.errors.HttpMethodNotAllowed:
-            raise
-        except asyncio.TimeoutError:
-            return
-        except FileUpdatedDuringStreamException as e:
-            logging.exception(e)
-            # A background observer should have picked up the modify/delete event, no need to do anything.
-            return
+                response = yield from asyncio.wait_for(request, timeout)
+        finally:
+            self.throttler.release()
 
         if expects:
             if response.status not in expects:
@@ -323,22 +314,21 @@ def safe_file_stream(file, lock):
         yield from asyncio.sleep(0)
 
 @asyncio.coroutine
-def check_for_changes(local_file, locks):
+def check_for_changes(local_file, lock):
     """ Checks to see if a File object has changed, according to the database.
 
-        :param File local_file: original file data being checked
-        :param list locks:      [0] - Lock that will tell safe_file_stream that a change has occurred
-                                [1] - Lock that will tell this function to stop
+        :param File local_file:     original file data being checked
+        :param asyncio.Locl locks:  Lock that will tell safe_file_stream that a change has occurred
     """
     orig_modified = local_file.date_modified
-    while not locks[1].locked():
+    while True:
         # logging.debug('checking for changes')  # Commented out for performance, uncomment for testing.
         try:
             maybe_updated = session.query(File).filter(File.id == local_file.id).one()
         except NoResultFound as e:
             logging.exception('File deleted: {}'.format(e))
-            locks[0].acquire()
+            lock.acquire()
         else:
             if maybe_updated.date_modified != orig_modified or maybe_updated.locally_deleted:
-                locks[0].acquire()
+                lock.acquire()
         yield from asyncio.sleep(1)

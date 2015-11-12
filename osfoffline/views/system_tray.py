@@ -6,13 +6,16 @@ import sys
 import webbrowser
 
 from PyQt5.Qt import QIcon
-from PyQt5.QtWidgets import (QDialog, QSystemTrayIcon,
-                             QAction, QMenu)
-import osfoffline.alerts as AlertHandler
-from osfoffline.utils.validators import validate_containing_folder
-import osfoffline.views.rsc.resources  # need this import for the logo to work properly.
-
 from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtWidgets import QAction
+from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QMenu
+from PyQt5.QtWidgets import QSystemTrayIcon
+
+from osfoffline.utils.validators import validate_containing_folder
+import osfoffline.alerts as AlertHandler
+# need this import for the logo to work properly.
+import osfoffline.views.rsc.resources  # noqa
 
 
 class SystemTray(QDialog):
