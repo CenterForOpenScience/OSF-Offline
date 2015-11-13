@@ -180,7 +180,6 @@ class OSFApp(QDialog):
         save(session, user)
         if self.preferences.isVisible():
             self.preferences.close()
-        self.pause()
         self.login_signal.emit()
 
     def open_preferences(self):
