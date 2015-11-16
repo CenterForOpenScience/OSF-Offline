@@ -165,18 +165,22 @@ class Poll(object):
 
         local_files = {}
         remote_files = {}
+        new_files = []
 
         for local in local_list:
             assert isinstance(local, Base)
             if isinstance(local, File) and local.name == '.DS_Store':
                 continue
-            local_files[local.osf_id] = local
+            if local.osf_id:
+                local_files[local.osf_id] = local
+            else:
+                new_files.append((local, None))
 
         for remote in remote_list:
             assert isinstance(remote, RemoteObject)
             remote_files[remote.id] = remote
 
-        return [
+        return new_files + [
             (local_files.get(fid), remote_files.get(fid))
             for fid in set(list(local_files.keys()) + list(remote_files.keys()))
         ]
