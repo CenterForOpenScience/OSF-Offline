@@ -185,16 +185,18 @@ class Preferences(QDialog):
             return
 
         for node in nodes:
-            tree_item = QTreeWidgetItem(self.preferences_window.treeWidget)
-            tree_item.setCheckState(self.PROJECT_SYNC_COLUMN, Qt.Unchecked)
-            tree_item.setText(self.PROJECT_NAME_COLUMN, _translate("Preferences", path.make_folder_name(node.name, node_id=node.id)))
+            illegal_chars = ['<', '>', ':', '"', '/', '\\', '|', '?', '*']
+            if not any(x in node.name for x in illegal_chars):
+                tree_item = QTreeWidgetItem(self.preferences_window.treeWidget)
+                tree_item.setCheckState(self.PROJECT_SYNC_COLUMN, Qt.Unchecked)
+                tree_item.setText(self.PROJECT_NAME_COLUMN, _translate("Preferences", path.make_folder_name(node.name, node_id=node.id)))
 
-            if node.id in user.guid_for_top_level_nodes_to_sync:
-                tree_item.setCheckState(self.PROJECT_SYNC_COLUMN, Qt.Checked)
-                if node.id not in self.checked_items:
-                    self.checked_items.append(node.id)
+                if node.id in user.guid_for_top_level_nodes_to_sync:
+                    tree_item.setCheckState(self.PROJECT_SYNC_COLUMN, Qt.Checked)
+                    if node.id not in self.checked_items:
+                        self.checked_items.append(node.id)
 
-            self.tree_items.append((tree_item, node.id))
+                self.tree_items.append((tree_item, node.id))
         self.preferences_window.treeWidget.resizeColumnToContents(self.PROJECT_SYNC_COLUMN)
         self.preferences_window.treeWidget.resizeColumnToContents(self.PROJECT_NAME_COLUMN)
         self.preferences_window.treeWidget.unsetCursor()
