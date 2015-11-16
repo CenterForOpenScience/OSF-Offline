@@ -327,20 +327,40 @@ class OSFEventHandler(FileSystemEventHandler):
     def _is_illegal(self, event):
         reserved_words = ['Components']
         src_path = ProperPath(event.src_path, event.is_directory)
+        item = None
+        parent = False
         try:
             dest_path = ProperPath(event.dest_path, event.is_directory)
             try:
                 item = self._get_item_by_path(src_path)
             except ItemNotInDB:
-                item = self._get_parent_item_from_path(src_path)
-                assert isinstance(item, Node)
+                # Either is the components folder or something that was previously illegally named
+                try:
+                    # Item is the components folder so lets see if there is more stuff above it
+                    item = self._get_item_by_path(src_path.parent)
+                    # Fixme: probably could use another assert statement somewhere
+                    parent = True
+                    assert isinstance(item, Node)
+                except ItemNotInDB:
+                    # Probably an item that was illegal and now is being renamed again
+                    try:
+                        # if this is true then they renamed it back to something legal
+                        item = self._get_item_by_path(dest_path)
+                        return False
+                    except ItemNotInDB:
+                        # still not a legal name
+                        if dest_path.name != src_path.name:
+                            AlertHandler.warn('{} will not sync until it is renamed properly'.format(dest_path.name))
+                            print('{} will not sync until it is renamed properly'.format(dest_path.name))
+                        return True
             try:
                 new_parent_item = self._get_parent_item_from_path(dest_path)
             except ItemNotInDB:
                 if isinstance(item, Node):
-                    if make_folder_name(item.title, item.osf_id) != dest_path.name:
+                    if make_folder_name(item.title, item.osf_id) != dest_path.name and parent == False:
                         AlertHandler.warn('Cannot manipulate components locally. {} will stop syncing'.format(item.title))
                         print('Cannot manipulate components locally. {} will stop syncing'.format(item.title))
+                        return True
                 else:
                     curr = item.node
                     running = True
@@ -349,6 +369,7 @@ class OSFEventHandler(FileSystemEventHandler):
                             return True
                         if curr.top_level:
                             running = False
+                            return False
                         else:
                             curr = curr.node
                     raise
@@ -357,9 +378,12 @@ class OSFEventHandler(FileSystemEventHandler):
                 print('Cannot have a custom file or folder named {}'.format(dest_path.name))
                 return True
         except AttributeError:
-            # Fixme: Need to figure out what this except should do
             pass
+            #Fixme: Don't know what to do here
         if src_path.name in reserved_words:
-            AlertHandler.warn('Cannot rename the {} folder'.format(src_path.name))
-            print('Cannot rename the {} folder'.format(src_path.name))
-            return True
+            if event.event_type == 'moved':
+                AlertHandler.warn('Cannot rename the {} folder'.format(src_path.name))
+                print('Cannot rename the {} folder'.format(src_path.name))
+                return True
+
+        return False
