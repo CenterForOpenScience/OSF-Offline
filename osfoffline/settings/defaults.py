@@ -4,12 +4,15 @@ import colorlog  # noqa
 # Development mode: use a local OSF dev version and more granular logging
 DEV_MODE = False  # TODO (abought): auto-set flag when using `inv start_for_tests`
 
+LOGOUT_CODE = -10607
+
 # General settings
 PROJECT_NAME = 'osf-offline'
 PROJECT_AUTHOR = 'cos'
 APPLICATION_SCOPES = 'osf.full_write'
 
 # Base URL for API server; used to fetch data
+OSF_URL = 'https://staging.osf.io'
 API_BASE = 'https://staging-api.osf.io'
 FILE_BASE = 'https://staging-files.osf.io'
 

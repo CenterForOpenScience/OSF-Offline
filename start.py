@@ -3,7 +3,9 @@ import sys
 from PyQt5.QtWidgets import QApplication, QMessageBox, QSystemTrayIcon
 
 from osfoffline import utils
-from osfoffline.application.main import OSFApp
+from osfoffline import settings
+from osfoffline.application.main import OSFOffline
+from osfoffline.views.start_screen import LoginScreen
 
 
 def running_warning():
@@ -39,12 +41,25 @@ def start():
 
     QApplication.setQuitOnLastWindowClosed(False)
 
-    osf = OSFApp()
+    login = LoginScreen()
+    user = login.get_user()
+    login.hide()
 
-    osf.start()
+    if user is None:
+        return sys.exit(1)
 
-    osf.hide()
-    sys.exit(app.exec_())
+    osf = OSFOffline(user, app)
+
+    osf.ensure_folder()
+
+    osf.show()
+
+    ret = app.exec_()
+    if ret == settings.LOGOUT_CODE:
+        del app  # Force all existing windows to close
+        start()
+    else:
+        sys.exit(ret)
 
 
 if __name__ == "__main__":

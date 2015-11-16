@@ -1,6 +1,5 @@
 import os
 import logging
-import threading
 
 import requests
 
@@ -145,10 +144,10 @@ class Preferences(QDialog):
             tree_item.setCheckState(self.PROJECT_SYNC_COLUMN, Qt.Unchecked)
 
     def open_window(self, tab=GENERAL):
+        self.raise_()
         if self.isVisible():
             self.preferences_window.tabWidget.setCurrentIndex(tab)
             self.selector(tab)
-            self.raise_()
         else:
             self.preferences_window.tabWidget.setCurrentIndex(tab)
             self.selector(tab)
