@@ -1,103 +1,84 @@
 # -*- coding: utf-8 -*-
-import threading
 import asyncio
 import logging
+import threading
 
 from watchdog.observers import Observer
-import osfoffline.database_manager.models as models
-import osfoffline.polling_osf_manager.polling as polling
-import osfoffline.filesystem_manager.osf_event_handler as osf_event_handler
+
+
+from osfoffline.database_manager import models
 from osfoffline.database_manager.db import session
+from osfoffline.filesystem_manager import osf_event_handler
+from osfoffline.filesystem_manager.sync_local_filesystem_and_db import LocalDBSync
+from osfoffline.polling_osf_manager import polling
+
+
+logger = logging.getLogger(__name__)
 
 
 class BackgroundWorker(threading.Thread):
+
     def __init__(self):
         super().__init__()
+
+        # Start out with null variables for NoneType errors rather than Attribute Errors
         self.user = None
-        self.osf_folder = ''
+        self.osf_folder = None
+
         self.loop = None
-        self.paused = True  # start out paused
-        self.running = False
         self.poller = None
         self.observer = None
 
+    # courtesy of waterbutler
+    def ensure_event_loop(self):
+        """Ensure the existance of an eventloop
+        Useful for contexts where get_event_loop() may raise an exception.
+        Such as multithreaded applications
+
+        :returns: The new event loop
+        :rtype: BaseEventLoop
+        """
+        try:
+            return asyncio.get_event_loop()
+        except (AssertionError, RuntimeError):
+            asyncio.set_event_loop(asyncio.new_event_loop())
+
+        # Note: No clever tricks are used here to dry up code
+        # This avoids an infinite loop if settings the event loop ever fails
+        return asyncio.get_event_loop()
+
     def run(self):
-
-        logging.debug('Run in background tasks called for first time.')
+        logger.debug('Background worker starting')
         self.loop = self.ensure_event_loop()
-        self.run_background_tasks()
-        self.loop.run_forever()
+        # self.loop.set_debug(True)
 
-    def run_background_tasks(self):
-        logging.debug('starting run_background_tasks')
+        self.user = self.get_current_user()
+        self.osf_folder = self.user.osf_local_folder_path
 
-        if not self.running:
-            self.user = self.get_current_user()
-            self.osf_folder = self.user.osf_local_folder_path
+        logger.debug('Starting observer thread')
+        self.start_folder_observer()
 
-            logging.debug('start observing')
-            self.start_observing_osf_folder()
-            logging.debug('start polling')
-            self.start_polling_server()
-            self.running = True
+        logging.debug('Starting OSF polling')
+        self.start_osf_poller()
 
-    def pause_background_tasks(self):
+        logging.debug('Starting background event loop')
+        try:
+            self.loop.run_forever()
+        except Exception as e:
+            logger.exception(e)
+        finally:
+            self.stop()
+        logging.debug('Background event loop exited')
 
-        if self.running:
-            self.stop_polling_server()
-            self.stop_observing_osf_folder()
-            # self.stop_loop()
-            self.running = False
+    def get_current_user(self):
+        return session.query(models.User).one()
 
-    def start_polling_server(self):
+    def start_osf_poller(self):
         self.poller = polling.Poll(self.user, self.loop)
         self.poller.start()
 
-    def stop_polling_server(self):
-        if self.poller:
-            self.poller.stop()
-
-    # todo: can refactor this code out to somewhere
-
-    def get_current_user(self):
-        return session.query(models.User).filter(models.User.logged_in).one()
-
-    def stop_loop(self, close=False):
-        """ WARNING: Only pass in 'close' if you plan on creating a new loop afterwards
-        """
-        logging.debug('stop loop')
-        if not self.loop:
-            logging.debug('loop never initialized')
-            return
-
-        if not self.loop.is_running():
-            logging.debug('loop already stopped')
-            if close:
-                if self.loop.is_closed():
-                    logging.debug('loop already closed')
-                else:
-                    logging.debug('closing loop')
-                    self.loop.close()
-        else:
-            logging.debug('calling loop.stop(). will stop when polling/observing events finish.')
-            self.loop.stop()
-            if close:
-                while not self.loop.is_closed():
-                    if not self.loop.is_running():
-                        logging.debug('closing loop')
-                        self.loop.close()
-
-    def stop(self):
-        logging.debug('stopping background worker')
-        self.stop_polling_server()
-        logging.debug('stop polling')
-        self.stop_observing_osf_folder()
-        logging.debug('stop observing')
-        self.stop_loop(close=True)
-
-    def start_observing_osf_folder(self):
+    def start_folder_observer(self):
         # if something inside the folder changes, log it to config dir
-
         # create event handler
         self.event_handler = osf_event_handler.OSFEventHandler(
             self.osf_folder,
@@ -110,36 +91,51 @@ class BackgroundWorker(threading.Thread):
         self.observer = Observer()  # create observer. watched for events on files.
         # attach event handler to observed events. make observer recursive
         self.observer.schedule(self.event_handler, self.osf_folder, recursive=True)
-        # LocalDBSync(self.user.osf_local_folder_path, self.observer, self.user).emit_new_events()
+        LocalDBSync(self.user.osf_local_folder_path, self.observer, self.user).emit_new_events()
 
         try:
             self.observer.start()  # start
-        except OSError:
+        except OSError as e:
             # FIXME: Document these limits and provide better user notification.
             #    See http://pythonhosted.org/watchdog/installation.html for limits.
-            logging.warning('limit of watched items reached')
+            raise RuntimeError('Limit of watched items reached') from e
 
-    def stop_observing_osf_folder(self):
-        if self.observer:
-            self.observer.stop()
-            self.observer.join()
+    def stop(self):
+        # Note: This method is **NOT called from this current thread**
+        # All method/function/routines/etc MUST be thread safe from here out
+        if not self.poller or not self.observer:
+            raise RuntimeError('OSF poller or folder observer is not defined, Background work was not correctly initialized')
 
-    # courtesy of waterbutler
-    def ensure_event_loop(self):
-        """Ensure the existance of an eventloop
-        Useful for contexts where get_event_loop() may
-        raise an exception.
-        :returns: The new event loop
-        :rtype: BaseEventLoop
+        logger.debug('Stopping background worker')
+
+        logger.debug('Stopping OSF polling')
+        self.loop.call_soon_threadsafe(self.poller.stop)
+
+        logger.debug('Stopping observer thread')
+        # observer is actually a seperate child thread and must be join()ed
+        self.observer.stop()
+        self.observer.join()
+
+        logger.debug('Stopping the event loop')
+        # Note: this is what actually stops the current thread
+        # Calls self.join, be careful with what is on the event loop
+        self.stop_loop(close=True)
+
+    def stop_loop(self, close=False):
+        """ WARNING: Only pass in 'close' if you plan on creating a new loop afterwards
         """
-        try:
-            return asyncio.get_event_loop()
-        except (AssertionError, RuntimeError):
-            asyncio.set_event_loop(asyncio.new_event_loop())
+        if not self.loop:
+            logger.warning('loop never initialized')
+            return
 
-        # Note: No clever tricks are used here to dry up code
-        # This avoids an infinite loop if settings the event loop ever fails
-        return asyncio.get_event_loop()
+        if self.loop.is_running():
+            self.loop.call_soon_threadsafe(self.loop.stop)
+            logging.debug('Stopped event loop')
+            self.join()
+
+        if close:
+            self.loop.close()
+            logging.debug('Closed event loop')
 
 
 # HOW DOES LOGIN/LOGOUT WORK?

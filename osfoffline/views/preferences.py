@@ -1,15 +1,26 @@
 import os
 import logging
+import threading
 
-from PyQt5.QtWidgets import (QDialog, QFileDialog, QTreeWidgetItem)
-from PyQt5.QtCore import QCoreApplication, Qt
+import requests
+
+from PyQt5 import QtCore
+from PyQt5.QtCore import QCoreApplication
+from PyQt5.QtCore import Qt
 from PyQt5.QtCore import pyqtSignal
-from osfoffline.views.rsc.preferences_rc import Ui_Preferences  # REQUIRED FOR GUI
+from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QMessageBox
+from PyQt5.QtWidgets import QTreeWidgetItem
+from sqlalchemy.exc import SQLAlchemyError
+
 from osfoffline.database_manager.db import session
 from osfoffline.database_manager.models import User
+from osfoffline.database_manager.utils import save
 from osfoffline.polling_osf_manager.api_url_builder import api_url_for, NODES, USERS
 from osfoffline.polling_osf_manager.remote_objects import RemoteNode
-import requests
+from osfoffline.utils import path
+from osfoffline.views.rsc.preferences_rc import Ui_Settings  # REQUIRED FOR GUI
 import osfoffline.alerts as AlertHandler
 
 
@@ -21,31 +32,59 @@ class Preferences(QDialog):
     OSF = 1
     ABOUT = 2
 
-    PROJECT_NAME_COLUMN = 0
-    PROJECT_SYNC_COLUMN = 1
+    PROJECT_NAME_COLUMN = 1
+    PROJECT_SYNC_COLUMN = 0
 
     preferences_closed_signal = pyqtSignal()
+
     containing_folder_updated_signal = pyqtSignal((str,))
 
     def __init__(self):
         super().__init__()
         self._translate = QCoreApplication.translate
         self.containing_folder = ''
-        self.preferences_window = Ui_Preferences()
+        self.preferences_window = Ui_Settings()
         self.preferences_window.setupUi(self)
 
         self.preferences_window.changeFolderButton_2.clicked.connect(self.update_sync_nodes)
+        self.preferences_window.pushButton.clicked.connect(self.sync_all)
+        self.preferences_window.pushButton_2.clicked.connect(self.sync_none)
+
         self.tree_items = []
+        self.checked_items = []
         self.setup_slots()
 
+        self._executor = QtCore.QThread()
+        self.node_fetcher = NodeFetcher()
+
+    def get_guid_list(self):
+        guid_list = []
+        for tree_item, node_id in self.tree_items:
+            if tree_item.checkState(self.PROJECT_SYNC_COLUMN) == Qt.Checked:
+                guid_list.append(node_id)
+        return guid_list
+
     def closeEvent(self, event):
-        logging.debug('closed...... preferences....')
-        self.preferences_closed_signal.emit()
+        guid_list = self.get_guid_list()
+        if guid_list != self.checked_items:
+            reply = QMessageBox()
+            reply.setText('Unsaved changes')
+            reply.setIcon(QMessageBox.Warning)
+            reply.setInformativeText('You have unsaved changes to your synced projects.\n\n '
+                                     'Please review your changes and press \'update\' if you would like to save them. \n\n  '
+                                     'Are you sure you would like to leave without saving? \n')
+            default = reply.addButton('Exit without saving', QMessageBox.YesRole)
+            reply.addButton('Review changes', QMessageBox.NoRole)
+            reply.setDefaultButton(default)
+            if reply.exec_() != 0:
+                return event.ignore()
+        try:
+            user = session.query(User).filter(User.logged_in).one()
+        except SQLAlchemyError:
+            pass
+        else:
+            self.preferences_closed_signal.emit()
         event.accept()
-        # if self.isVisible():
-        #     self.hide()
-        #     event.ignore()
-        #     self.destroy()
 
     def alerts_changed(self):
         if self.preferences_window.desktopNotifications.isChecked():
@@ -90,19 +129,26 @@ class Preferences(QDialog):
 
     def update_sync_nodes(self):
         user = session.query(User).filter(User.logged_in).one()
-        guid_list = []
-
-        for tree_item in self.tree_items:
-            for name, id in [(node.name, node.id) for node in self.remote_top_level_nodes]:
-                if name == tree_item.text(self.PROJECT_NAME_COLUMN):
-                    if tree_item.checkState(self.PROJECT_SYNC_COLUMN) == Qt.Checked:
-                        guid_list.append(id)
+        guid_list = self.get_guid_list()
+        # FIXME: This needs a try-except block but is waiting on a preferences refactor to be merged
         user.guid_for_top_level_nodes_to_sync = guid_list
+        save(session, user)
+        self.checked_items = guid_list
+        self.close()
+
+    def sync_all(self):
+        for tree_item, node_id in self.tree_items:
+            tree_item.setCheckState(self.PROJECT_SYNC_COLUMN, Qt.Checked)
+
+    def sync_none(self):
+        for tree_item, node_id in self.tree_items:
+            tree_item.setCheckState(self.PROJECT_SYNC_COLUMN, Qt.Unchecked)
 
     def open_window(self, tab=GENERAL):
         if self.isVisible():
             self.preferences_window.tabWidget.setCurrentIndex(tab)
             self.selector(tab)
+            self.raise_()
         else:
             self.preferences_window.tabWidget.setCurrentIndex(tab)
             self.selector(tab)
@@ -116,30 +162,52 @@ class Preferences(QDialog):
         elif selected_index == self.OSF:
             user = session.query(User).filter(User.logged_in).one()
             self.preferences_window.label.setText(self._translate("Preferences", user.full_name))
-            self.create_tree_item_for_each_top_level_node()
+
+            self._executor = QtCore.QThread()
+            self.node_fetcher = NodeFetcher()
+            self.preferences_window.treeWidget.setCursor(QtCore.Qt.BusyCursor)
+            self.node_fetcher.finished[list].connect(self.populate_item_tree)
+            self.node_fetcher.moveToThread(self._executor)
+            self._executor.started.connect(self.node_fetcher.fetch)
+            self._executor.start()
 
     def reset_tree_widget(self):
         self.tree_items.clear()
         self.preferences_window.treeWidget.clear()
 
-    def create_tree_item_for_each_top_level_node(self):
-        self.remote_top_level_nodes = self.get_remote_top_level_nodes()
+    @QtCore.pyqtSlot(list)
+    def populate_item_tree(self, nodes):
         self.reset_tree_widget()
         _translate = QCoreApplication.translate
+        try:
+            user = session.query(User).filter(User.logged_in).one()
+        except SQLAlchemyError:
+            return
 
-        user = session.query(User).filter(User.logged_in).one()
-        for node in self.remote_top_level_nodes:
+        for node in nodes:
             tree_item = QTreeWidgetItem(self.preferences_window.treeWidget)
             tree_item.setCheckState(self.PROJECT_SYNC_COLUMN, Qt.Unchecked)
-            tree_item.setText(self.PROJECT_NAME_COLUMN, _translate("Preferences", node.name))
+            tree_item.setText(self.PROJECT_NAME_COLUMN, _translate("Preferences", path.make_folder_name(node.name, node_id=node.id)))
 
             if node.id in user.guid_for_top_level_nodes_to_sync:
                 tree_item.setCheckState(self.PROJECT_SYNC_COLUMN, Qt.Checked)
-            self.preferences_window.treeWidget.resizeColumnToContents(self.PROJECT_NAME_COLUMN)
+                if node.id not in self.checked_items:
+                    self.checked_items.append(node.id)
 
-            self.tree_items.append(tree_item)
+            self.tree_items.append((tree_item, node.id))
+        self.preferences_window.treeWidget.resizeColumnToContents(self.PROJECT_SYNC_COLUMN)
+        self.preferences_window.treeWidget.resizeColumnToContents(self.PROJECT_NAME_COLUMN)
+        self.preferences_window.treeWidget.unsetCursor()
 
-    def get_remote_top_level_nodes(self):
+    def setup_slots(self):
+        self.preferences_window.tabWidget.currentChanged.connect(self.selector)
+
+
+class NodeFetcher(QtCore.QObject):
+
+    finished = QtCore.pyqtSignal(list)
+
+    def fetch(self):
         remote_top_level_nodes = []
         try:
 
@@ -160,16 +228,5 @@ class Preferences(QDialog):
         except Exception as e:
             logging.warning(e)
 
+        self.finished.emit(remote_top_level_nodes)
         return remote_top_level_nodes
-
-    def setup_slots(self):
-        self.preferences_window.tabWidget.currentChanged.connect(self.selector)
-
-
-def debug_trace():
-    '''Set a tracepoint in the Python debugger that works with Qt'''
-    from PyQt5.QtCore import pyqtRemoveInputHook
-
-    from pdb import set_trace
-    pyqtRemoveInputHook()
-    set_trace()

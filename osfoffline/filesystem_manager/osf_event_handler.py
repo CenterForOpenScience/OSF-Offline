@@ -4,8 +4,11 @@ storing the data into the db, and then sending a request to the remote server.
 """
 import asyncio
 import logging
+import os
 
-from watchdog.events import FileSystemEventHandler, DirModifiedEvent
+from sqlalchemy.exc import SQLAlchemyError
+from watchdog.events import FileSystemEventHandler, DirModifiedEvent, DirCreatedEvent, FileCreatedEvent
+
 from osfoffline.database_manager.models import Node, File, User
 from osfoffline.database_manager.db import session
 from osfoffline.database_manager.utils import save
@@ -49,6 +52,15 @@ class OSFEventHandler(FileSystemEventHandler):
 
         # determine and get what moved
         if not self._already_exists(src_path):
+            try:
+                self._get_parent_item_from_path(src_path)
+            except ItemNotInDB:
+                # This means it was put into a place on the hierarchy being watched but otherwise not attached to a
+                # node, so it needs to be added just like a new event rather than as a move.
+
+                new_event = DirCreatedEvent(event.dest_path) if event.is_directory else FileCreatedEvent(event.dest_path)
+                yield from self._create_file_or_folder(new_event, src_path=dest_path)
+                return
             logging.warning('Tried to move item that does not exist: {}'.format(src_path.name))
             return
 
@@ -101,20 +113,7 @@ class OSFEventHandler(FileSystemEventHandler):
             logging.info('moved from {} to {}'.format(src_path.full_path, dest_path.full_path))
 
     @asyncio.coroutine
-    def on_created(self, event):
-        """Called when a file or directory is created.
-
-        :param event:
-            Event representing file/directory creation.
-        :type event:
-            :class:`DirCreatedEvent` or :class:`FileCreatedEvent`
-        """
-        src_path = ProperPath(event.src_path, event.is_directory)
-
-        # create new model
-        if self._already_exists(src_path):
-            return
-
+    def _create_file_or_folder(self, event, src_path):
         # assert: whats being created is a file folder
         try:
             containing_item = self._get_parent_item_from_path(src_path)
@@ -146,6 +145,23 @@ class OSFEventHandler(FileSystemEventHandler):
         logging.info("created new {} {}".format('folder' if event.is_directory else 'file', src_path.full_path))
 
     @asyncio.coroutine
+    def on_created(self, event):
+        """Called when a file or directory is created.
+
+        :param event:
+            Event representing file/directory creation.
+        :type event:
+            :class:`DirCreatedEvent` or :class:`FileCreatedEvent`
+        """
+        src_path = ProperPath(event.src_path, event.is_directory)
+
+        # create new model
+        if self._already_exists(src_path):
+            return
+
+        yield from self._create_file_or_folder(event, src_path=src_path)
+
+    @asyncio.coroutine
     def on_modified(self, event):
         """Called when a file or directory is modified.
 
@@ -164,7 +180,7 @@ class OSFEventHandler(FileSystemEventHandler):
             item = self._get_item_by_path(src_path)
         except ItemNotInDB:
             # todo: create file folder
-            logging.warning('file was modified but not already in db. create it in db.')
+            logging.warning('file {} was modified but not already in db. create it in db.'.format(src_path))
             return  # todo: remove this once above is implemented
 
         # update hash
@@ -190,23 +206,29 @@ class OSFEventHandler(FileSystemEventHandler):
         # get item
         item = self._get_item_by_path(src_path)
 
-        # put item in delete state
-        item.locally_deleted = True
-
-        # nodes cannot be deleted online. THUS, delete it inside database. It will be recreated locally.
-        if isinstance(item, Node):
-            session.delete(item)
-            save(session)
-            return
-
-        save(session, item)
-
-        logging.info('{} set to be deleted'.format(src_path.full_path))
+        # put item in delete state after waiting a second and
+        # checking to make sure the file was actually deleted
+        yield from asyncio.sleep(1)
+        if not os.path.exists(item.path):
+            item.locally_deleted = True
+            # nodes cannot be deleted online. THUS, delete it inside database. It will be recreated locally.
+            if isinstance(item, Node):
+                session.delete(item)
+                try:
+                    save(session)
+                except SQLAlchemyError as e:
+                    logging.exception('Error deleting node from database.')
+                return
+            try:
+                save(session, item)
+            except SQLAlchemyError as e:
+                logging.exception('Error deleting node from database.')
+            else:
+                logging.info('{} set to be deleted'.format(src_path.full_path))
 
     def dispatch(self, event):
         # basically, ignore all events that occur for 'Components' file or folder
         if self._event_is_for_components_file_folder(event):
-            AlertHandler.warn('Cannot have a custom file or folder named Components')
             return
 
         _method_map = {

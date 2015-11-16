@@ -17,10 +17,11 @@ ACCEPTED = 202
 
 
 class OSFQuery(object):
-    def __init__(self, loop, oauth_token):
+    def __init__(self, loop, oauth_token, limit=5):
         self.headers = {
             'Authorization': 'Bearer {}'.format(oauth_token),
         }
+        self.throttler = asyncio.Semaphore(limit)
         self.request_session = aiohttp.ClientSession(loop=loop, headers=self.headers)
 
     @asyncio.coroutine
@@ -243,6 +244,8 @@ class OSFQuery(object):
 
     @asyncio.coroutine
     def make_request(self, url, method=None, params=None, expects=None, get_json=False, timeout=180, data=None):
+        yield from self.throttler.acquire()
+
         if method is None:
             method = 'GET'
 
@@ -254,22 +257,8 @@ class OSFQuery(object):
         )
         try:
             response = yield from asyncio.wait_for(request, timeout)
-        except (
-                aiohttp.errors.ClientTimeoutError, aiohttp.errors.ClientConnectionError,
-                concurrent.futures._base.TimeoutError):
-            # internally, if a timeout occurs, aiohttp tries up to 3 times. thus we already technically have retries in.
-            AlertHandler.warn("Bad Internet Connection")
-            raise
-        except aiohttp.errors.BadHttpMessage:
-
-            raise
-        except aiohttp.errors.HttpMethodNotAllowed:
-
-            raise
-        except asyncio.TimeoutError:
-            request.cancel()
-            return
-
+        finally:
+            self.throttler.release()
 
         if expects:
             if response.status not in expects:

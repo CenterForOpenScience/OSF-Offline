@@ -29,6 +29,9 @@ def api_url_for(endpoint_type, related_type=None, **kwargs):
         if related_type:
             assert related_type in [NODES]
             base.path.segments.append(related_type)
+            user_nodes = _ensure_trailing_slash(base.url)
+            user_nodes += '?filter[registration]=false'
+            return user_nodes
     elif endpoint_type == NODES:
 
         base.path.segments.extend(['v2', NODES])
@@ -37,8 +40,7 @@ def api_url_for(endpoint_type, related_type=None, **kwargs):
         if related_type:
             assert related_type in [FILES, CHILDREN]
             base.path.segments.append(related_type)
-            if 'provider' in kwargs and 'file_id' in kwargs and kwargs['provider'] is not None and kwargs[
-                'file_id'] is not None:
+            if kwargs.get('provider') is not None and kwargs.get('file_id') is not None:
                 base.path.segments.extend([kwargs['provider'], str(kwargs['file_id'])])
     elif endpoint_type == FILES:
         base.path.segments.extend(['v2', FILES])

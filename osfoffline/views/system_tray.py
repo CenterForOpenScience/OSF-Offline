@@ -6,13 +6,16 @@ import sys
 import webbrowser
 
 from PyQt5.Qt import QIcon
-from PyQt5.QtWidgets import (QDialog, QSystemTrayIcon,
-                             QAction, QMenu)
-import osfoffline.alerts as AlertHandler
-from osfoffline.utils.validators import validate_containing_folder
-import osfoffline.views.rsc.resources  # need this import for the logo to work properly.
-
 from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtWidgets import QAction
+from PyQt5.QtWidgets import QDialog
+from PyQt5.QtWidgets import QMenu
+from PyQt5.QtWidgets import QSystemTrayIcon
+
+from osfoffline import alerts as AlertHandler
+from osfoffline.utils.validators import validate_containing_folder
+# need this import for the logo to work properly.
+import osfoffline.views.rsc.resources  # noqa
 
 
 class SystemTray(QDialog):
@@ -28,9 +31,10 @@ class SystemTray(QDialog):
         # menu items
         self.open_osf_folder_action = QAction("Open OSF Folder", self)
         self.launch_osf_action = QAction("Launch OSF", self)
+        self.sync_now_action = QAction("Sync Now", self)
         self.currently_synching_action = QAction("Up to date", self)
         self.currently_synching_action.setDisabled(True)
-        self.preferences_action = QAction("Preferences", self)
+        self.preferences_action = QAction("Settings", self)
         self.about_action = QAction("&About", self)
         self.quit_action = QAction("&Quit", self)
 
@@ -39,6 +43,7 @@ class SystemTray(QDialog):
         self.tray_icon_menu.addAction(self.open_osf_folder_action)
         self.tray_icon_menu.addAction(self.launch_osf_action)
         self.tray_icon_menu.addSeparator()
+        self.tray_icon_menu.addAction(self.sync_now_action)
         self.tray_icon_menu.addAction(self.currently_synching_action)
         self.tray_icon_menu.addSeparator()
         self.tray_icon_menu.addAction(self.preferences_action)
@@ -49,7 +54,7 @@ class SystemTray(QDialog):
         self.tray_icon.setContextMenu(self.tray_icon_menu)
 
         # todo: do we have a better icon for use with desktop apps?
-        icon = QIcon(':/cos_logo.png')
+        icon = QIcon(':/cos_logo_backup.png')
         self.tray_icon.setIcon(icon)
 
     def start(self):

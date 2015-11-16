@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import hashlib
+import itertools
 
 from watchdog.events import (
     DirDeletedEvent,
@@ -32,13 +33,10 @@ class LocalDBSync(object):
         self.user = user
 
     def emit_new_events(self):
-
-        local_db_tuple_list = self._make_local_db_tuple_list(self.osf_path, self.user)
-        for local, db in local_db_tuple_list:
-            self._emit_new_events(local, db)
+        for local_child, db_child in self._make_local_db_tuple_list(self.osf_path, self.user):
+            self._emit_single_event_and_recurse(local_child, db_child)
 
     def _make_local_db_tuple_list(self, local, db):
-        # checks
         if local is None and db is None:
             raise LocalDBBothNone
         if local and db and self._get_proper_path(local) != self._get_proper_path(db):
@@ -46,42 +44,21 @@ class LocalDBSync(object):
         if local and not isinstance(local, ProperPath):
             raise InvalidItemType
 
-        out = []
-        children = self._get_children(local) + self._get_children(db)
-        # sort in order to get matching items next to each other.
-        children = sorted(children, key=lambda c: self._get_proper_path(c).full_path)
+        local_children = {}
+        db_children = {}
 
-        i = 0
-        while i < len(children):
-            if self._represent_same_values(children, i):
-                if isinstance(children[i], Base):
-                    to_add = (children[i + 1], children[i])
-                else:
-                    to_add = (children[i], children[i + 1])
-                # add an extra 1 because skipping next value
-                i += 1
-            elif isinstance(children[i], Base):
-                to_add = (None, children[i])
-            else:
-                to_add = (children[i], None)
-            out.append(to_add)
-            i += 1
+        for child in self._get_children(local):
+            assert isinstance(child, ProperPath)
+            local_children[child.full_path] = child
 
-        # assertions
-        for local, db in out:
-            if local is not None and db is not None:
-                assert isinstance(local, ProperPath)
-                assert isinstance(db, Base)
-                assert local == self._get_proper_path(db)
-            elif local is not None:
-                assert db is None
-                assert isinstance(local, ProperPath)
-            elif db is not None:
-                assert isinstance(db, Base)
-                assert local is None
-            else:
-                assert False
-        return out
+        for child in self._get_children(db):
+            assert isinstance(child, Base)
+            db_children[self._get_proper_path(child).full_path] = child
+
+        return [
+            (local_children.get(path), db_children.get(path))
+            for path in set(itertools.chain(local_children.keys(), db_children.keys()))
+        ]
 
     def _get_children(self, item):
         if item is None:
@@ -120,8 +97,7 @@ class LocalDBSync(object):
                 return item.top_level_nodes
             else:
                 raise InvalidItemType('LocalDBSync._get_children does '
-                                      'not handle items of t'
-                                      'ype '
+                                      'not handle items of type '
                                       '{item_type}'.format(item_type=type(item)))
 
     def _get_proper_path(self, item):
@@ -140,12 +116,6 @@ class LocalDBSync(object):
             raise InvalidItemType('LocalDBSync._get_proper_path does '
                                   'not handle items of type '
                                   '{item_type}'.format(item_type=type(item)))
-
-    def _represent_same_values(self, children, i):
-        if i + 1 < len(children):
-            return self._get_proper_path(children[i]) == self._get_proper_path(children[i + 1])
-        else:
-            return False
 
     def _make_hash(self, local):
         assert isinstance(local, ProperPath)
@@ -167,6 +137,12 @@ class LocalDBSync(object):
             raise TypeError
 
         event = None
+
+        if local:
+            # TODO: find better way of ignoring files we want to ignore
+            if local.name.startswith('.') or local.name.endswith('~'):
+                return event
+
         if local and db:
             if self._get_proper_path(local) != self._get_proper_path(db):
                 raise IncorrectLocalDBMatch
@@ -187,17 +163,15 @@ class LocalDBSync(object):
                 event = FileCreatedEvent(local_path.full_path)
         return event
 
-    def _emit_new_events(self, local, db):
+    def _emit_single_event_and_recurse(self, local, db):
         assert local or db
         event = self._determine_event_type(local, db)
         if event:
             emitter = next(iter(self.observer.emitters))
             emitter.queue_event(event)
 
-        local_db_tuple_list = self._make_local_db_tuple_list(local, db)
-        for local, db in local_db_tuple_list:
-            self._emit_new_events(local, db)
-
+        for local_child, db_child in self._make_local_db_tuple_list(local, db):
+            self._emit_single_event_and_recurse(local_child, db_child)
 
 # observer = Observer()  # create observer. watched for events on files.
 
@@ -220,9 +194,6 @@ class LocalDBSync(object):
 #     determine_new_events(user.osf_path, observer, user)
 #     observer.start()
 #     loop.run_forever()
-
-
-
 
 
 """

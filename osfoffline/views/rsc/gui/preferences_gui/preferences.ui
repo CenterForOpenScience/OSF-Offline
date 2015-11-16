@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Preferences</class>
- <widget class="QDialog" name="Preferences">
+ <class>Settings</class>
+ <widget class="QDialog" name="Settings">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>590</width>
-    <height>320</height>
+    <width>635</width>
+    <height>485</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Preferences</string>
+   <string>Settings</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_2">
-   <item>
+  <layout class="QGridLayout" name="gridLayout_3">
+   <item row="0" column="0">
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <widget class="QTabWidget" name="tabWidget">
@@ -25,240 +25,199 @@
         <attribute name="title">
          <string>General</string>
         </attribute>
-        <widget class="QGroupBox" name="groupBox">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>20</y>
-           <width>551</width>
-           <height>80</height>
-          </rect>
-         </property>
-         <property name="title">
-          <string>System</string>
-         </property>
-         <widget class="QCheckBox" name="desktopNotifications">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>20</y>
-            <width>541</width>
-            <height>22</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Show Desktop Notifications</string>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
-          </property>
-         </widget>
-         <widget class="QCheckBox" name="startOnStartup">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>40</y>
-            <width>541</width>
-            <height>22</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Start OSF Offline on Computer Startup</string>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </widget>
-        <widget class="QGroupBox" name="groupBox_6">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>110</y>
-           <width>561</width>
-           <height>61</height>
-          </rect>
-         </property>
-         <property name="title">
-          <string>Choose folder to Place OSF folder in </string>
-         </property>
-         <widget class="QPushButton" name="changeFolderButton">
-          <property name="geometry">
-           <rect>
-            <x>440</x>
-            <y>20</y>
-            <width>99</width>
-            <height>31</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Change</string>
-          </property>
-         </widget>
-         <widget class="QTextEdit" name="containingFolderTextEdit">
-          <property name="geometry">
-           <rect>
-            <x>20</x>
-            <y>20</y>
-            <width>331</width>
-            <height>31</height>
-           </rect>
-          </property>
-          <property name="html">
-           <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+        <layout class="QGridLayout" name="gridLayout_7">
+         <item row="0" column="0">
+          <widget class="QGroupBox" name="groupBox">
+           <property name="title">
+            <string>System</string>
+           </property>
+           <widget class="QCheckBox" name="desktopNotifications">
+            <property name="geometry">
+             <rect>
+              <x>10</x>
+              <y>20</y>
+              <width>541</width>
+              <height>22</height>
+             </rect>
+            </property>
+            <property name="text">
+             <string>Show Desktop Notifications</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+           <widget class="QCheckBox" name="startOnStartup">
+            <property name="geometry">
+             <rect>
+              <x>10</x>
+              <y>40</y>
+              <width>541</width>
+              <height>22</height>
+             </rect>
+            </property>
+            <property name="text">
+             <string>Start OSF Offline on Computer Startup</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QGroupBox" name="groupBox_6">
+           <property name="title">
+            <string>Choose folder to Place OSF folder in </string>
+           </property>
+           <widget class="QPushButton" name="changeFolderButton">
+            <property name="geometry">
+             <rect>
+              <x>440</x>
+              <y>20</y>
+              <width>99</width>
+              <height>31</height>
+             </rect>
+            </property>
+            <property name="text">
+             <string>Change</string>
+            </property>
+           </widget>
+           <widget class="QTextEdit" name="containingFolderTextEdit">
+            <property name="geometry">
+             <rect>
+              <x>20</x>
+              <y>20</y>
+              <width>331</width>
+              <height>31</height>
+             </rect>
+            </property>
+            <property name="html">
+             <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:11pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;/home/himanshu/somefolder/My Project&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-          </property>
-         </widget>
-        </widget>
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'.Helvetica Neue DeskInterface'; font-size:13pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-size:11pt;&quot;&gt;/home/himanshu/somefolder/My Project&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+            </property>
+           </widget>
+          </widget>
+         </item>
+        </layout>
        </widget>
        <widget class="QWidget" name="tab_2">
         <attribute name="title">
          <string>OSF</string>
         </attribute>
-        <widget class="QGroupBox" name="groupBox_2">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>10</y>
-           <width>581</width>
-           <height>51</height>
-          </rect>
-         </property>
-         <property name="title">
-          <string>Account</string>
-         </property>
-         <widget class="QGroupBox" name="groupBox_3">
-          <property name="geometry">
-           <rect>
-            <x>280</x>
-            <y>50</y>
-            <width>561</width>
-            <height>51</height>
-           </rect>
-          </property>
-          <property name="title">
-           <string>Account</string>
-          </property>
-         </widget>
-         <widget class="QLabel" name="label">
-          <property name="geometry">
-           <rect>
-            <x>30</x>
-            <y>16</y>
-            <width>411</width>
-            <height>31</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>User name</string>
-          </property>
-         </widget>
-         <widget class="QPushButton" name="accountLogOutButton">
-          <property name="geometry">
-           <rect>
-            <x>440</x>
-            <y>10</y>
-            <width>99</width>
-            <height>31</height>
-           </rect>
-          </property>
-          <property name="text">
-           <string>Log Out</string>
-          </property>
-         </widget>
-        </widget>
-        <widget class="QGroupBox" name="groupBox_4">
-         <property name="geometry">
-          <rect>
-           <x>10</x>
-           <y>70</y>
-           <width>561</width>
-           <height>211</height>
-          </rect>
-         </property>
-         <property name="title">
-          <string>Project</string>
-         </property>
-         <widget class="QGroupBox" name="groupBox_5">
-          <property name="geometry">
-           <rect>
-            <x>10</x>
-            <y>30</y>
-            <width>541</width>
-            <height>161</height>
-           </rect>
-          </property>
-          <property name="title">
-           <string>Choose Projects to Sync With</string>
-          </property>
-          <widget class="QPushButton" name="changeFolderButton_2">
-           <property name="geometry">
-            <rect>
-             <x>430</x>
-             <y>50</y>
-             <width>99</width>
-             <height>31</height>
-            </rect>
+        <layout class="QGridLayout" name="gridLayout">
+         <item row="0" column="0">
+          <widget class="QGroupBox" name="groupBox_2">
+           <property name="title">
+            <string>Account</string>
            </property>
-           <property name="text">
-            <string>Update</string>
-           </property>
+           <layout class="QGridLayout" name="gridLayout_2">
+            <item row="0" column="0">
+             <widget class="QLabel" name="label">
+              <property name="text">
+               <string>User name</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QPushButton" name="accountLogOutButton">
+              <property name="text">
+               <string>Log Out</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </widget>
-          <widget class="QTreeWidget" name="treeWidget">
-           <property name="geometry">
-            <rect>
-             <x>10</x>
-             <y>20</y>
-             <width>311</width>
-             <height>131</height>
-            </rect>
+         </item>
+         <item row="1" column="0">
+          <widget class="QGroupBox" name="groupBox_4">
+           <property name="layoutDirection">
+            <enum>Qt::LeftToRight</enum>
            </property>
-           <property name="toolTipDuration">
-            <number>-1</number>
+           <property name="autoFillBackground">
+            <bool>false</bool>
            </property>
-           <column>
-            <property name="text">
-             <string>Projects</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Sync</string>
-            </property>
-           </column>
+           <property name="title">
+            <string>Project</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+           <layout class="QGridLayout" name="gridLayout_5">
+            <item row="0" column="0">
+             <widget class="QGroupBox" name="groupBox_5">
+              <property name="title">
+               <string>Choose Projects to Sync With</string>
+              </property>
+              <layout class="QGridLayout" name="gridLayout_4">
+               <item row="0" column="0">
+                <widget class="QPushButton" name="pushButton">
+                 <property name="text">
+                  <string>Sync All</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="2">
+                <widget class="QPushButton" name="changeFolderButton_2">
+                 <property name="text">
+                  <string>Apply Settings</string>
+                 </property>
+                </widget>
+               </item>
+               <item row="1" column="0" colspan="2">
+                <widget class="QTreeWidget" name="treeWidget">
+                 <property name="toolTipDuration">
+                  <number>-1</number>
+                 </property>
+                 <column>
+                  <property name="text">
+                   <string>Sync</string>
+                  </property>
+                 </column>
+                 <column>
+                  <property name="text">
+                   <string>Projects</string>
+                  </property>
+                 </column>
+                </widget>
+               </item>
+               <item row="0" column="1">
+                <widget class="QPushButton" name="pushButton_2">
+                 <property name="text">
+                  <string>Sync None</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+           </layout>
           </widget>
-          <zorder>changeFolderButton_2</zorder>
-          <zorder>treeWidget</zorder>
-          <zorder>accountLogOutButton_2</zorder>
-         </widget>
-        </widget>
+         </item>
+        </layout>
        </widget>
        <widget class="QWidget" name="tab_5">
         <attribute name="title">
          <string>About</string>
         </attribute>
-        <widget class="QTextEdit" name="textEdit_2">
-         <property name="geometry">
-          <rect>
-           <x>20</x>
-           <y>20</y>
-           <width>551</width>
-           <height>251</height>
-          </rect>
-         </property>
-         <property name="html">
-          <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+        <layout class="QGridLayout" name="gridLayout_6">
+         <item row="0" column="0">
+          <widget class="QTextEdit" name="textEdit_2">
+           <property name="html">
+            <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Ubuntu'; font-size:11pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;This is OSF OFFLINE. Please go ahead and use it and make more software based off of it. Please and Thank You. &lt;/p&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;© Center for Open Science&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-        </widget>
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'.Helvetica Neue DeskInterface'; font-size:13pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-size:11pt;&quot;&gt;This is OSF OFFLINE. Please go ahead and use it and make more software based off of it. Please and Thank You. &lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Ubuntu'; font-size:11pt;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p align=&quot;center&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'Ubuntu'; font-size:11pt;&quot;&gt;© Center for Open Science&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </widget>
       </widget>
      </item>

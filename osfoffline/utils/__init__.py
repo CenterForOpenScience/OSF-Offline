@@ -5,21 +5,17 @@ import logging
 import logging.config
 import logging.handlers
 import os
-import sys
-
-from osfoffline.settings import log_config
 
 
-def start_app_logging(config=log_config.DEFAULT_LOGGING_CONFIG):
+def start_app_logging(config=None):
     """
     Start logging for the application
     :param config:
     :return:
     """
-    logging.config.dictConfig(config)
-
-    # Activate custom excepthook
-    sys.excepthook = log_config.capture_exceptions
+    # Avoids circular import
+    from osfoffline import settings
+    logging.config.dictConfig(config or settings.LOGGING_CONFIG)
 
 
 def start_user_logging(user_id, level=logging.ERROR):
@@ -30,10 +26,13 @@ def start_user_logging(user_id, level=logging.ERROR):
     :param level: The default severity of messages to log
     :return:
     """
+    # Avoids circular import
+    from osfoffline import settings
+
     # FIXME: Connect this once Matt's login changes land
-    log_filename = os.path.join(log_config.PROJECT_LOG_DIR, '{}.log'.format(user_id))
+    log_filename = os.path.join(settings.PROJECT_LOG_DIR, '{}.log'.format(user_id))
     handler = logging.FileHandler(log_filename)
-    formatter = logging.Formatter(log_config.FILE_FORMATTER)
+    formatter = logging.Formatter(settings.FILE_FORMATTER)
     handler.setLevel(level)
 
     handler.setFormatter(formatter)

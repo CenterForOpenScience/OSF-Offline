@@ -8,8 +8,6 @@ from osfoffline.polling_osf_manager.remote_objects import RemoteNode
 from osfoffline.polling_osf_manager.api_url_builder import api_url_for, NODES, USERS
 from osfoffline import settings
 
-from tests.fixtures.mock_osf_api_server.osf import app
-
 # WHEELHOUSE_PATH = os.environ.get('WHEELHOUSE')
 
 
@@ -77,6 +75,7 @@ def start_for_tests(dropdb=True, droplog=False, dropdir=False):
 
 @task
 def mock_osf_api_server():
+    from tests.fixtures.mock_osf_api_server.osf import app
     app.run(debug=True)  # debug=None because we do not want auto restart
 
 

@@ -9,6 +9,7 @@ from sqlalchemy.orm import relationship, backref, validates
 from sqlalchemy import Column, Integer, Boolean, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.hybrid import hybrid_property
+from osfoffline.utils.path import make_folder_name
 
 Base = declarative_base()
 
@@ -19,7 +20,6 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     full_name = Column(String)
     osf_login = Column(String, unique=True)
-    osf_password = Column(String)
     osf_local_folder_path = Column(String)
     oauth_token = Column(String)
     osf_id = Column(String, unique=True, nullable=True, default=None)  # multiple things allowed to be null
@@ -100,10 +100,9 @@ class Node(Base):
         # +os.path.sep+ instead of os.path.join: http://stackoverflow.com/a/14504695
 
         if self.parent:
-            return os.path.join(self.parent.path, 'Components', self.title)
+            return os.path.join(self.parent.path, 'Components', make_folder_name(self.title, node_id=self.osf_id))
         else:
-
-            return os.path.join(self.user.osf_local_folder_path, self.title)
+            return os.path.join(self.user.osf_local_folder_path, make_folder_name(self.title, node_id=self.osf_id))
 
     def locally_create_children(self):
         self.locally_created = True
