@@ -241,6 +241,9 @@ class Poll(object):
         elif local_node is not None and remote_node is None:
             yield from self.delete_local_node(local_node)
             return
+        elif not os.path.exists(local_node.path):
+            yield from self.delete_local_node(local_node)
+            local_node = yield from self.create_local_node(remote_node, local_parent_node)
         elif local_node is not None and remote_node is not None:
             if local_node.title != remote_node.name:
                 yield from self.modify_local_node(local_node, remote_node)
@@ -404,7 +407,6 @@ class Poll(object):
             parent=local_parent_node
         )
         save(session, new_node)
-
         if local_parent_node:
             yield from self._ensure_components_folder(local_parent_node)
         yield from self.queue.put(CreateFolder(new_node.path))
