@@ -424,33 +424,38 @@ class Poll(object):
 
         # NOTE: develop is not letting me download files. dont know why.
 
-        # create local file folder in db
-        file_type = File.FILE if isinstance(remote_file_folder, RemoteFile) else File.FOLDER
-        new_file_folder = File(
-            name=remote_file_folder.name,
-            type=file_type,
-            osf_id=remote_file_folder.id,
-            provider=remote_file_folder.provider,
-            osf_path=remote_file_folder.id,
-            user=self.user,
-            parent=local_parent_folder,
-            node=local_node
-        )
-        save(session, new_file_folder)
-
-        if file_type == File.FILE:
-            event = CreateFile(
-                path=new_file_folder.path,
-                download_url=remote_file_folder.download_url,
-                osf_query=self.osf_query
+        illegal_chars = ['<', '>', ':', '"', '/', '\\', '|', '?', '*']
+        if not any(x in remote_file_folder.name for x in illegal_chars):
+            # create local file folder in db
+            file_type = File.FILE if isinstance(remote_file_folder, RemoteFile) else File.FOLDER
+            new_file_folder = File(
+                name=remote_file_folder.name,
+                type=file_type,
+                osf_id=remote_file_folder.id,
+                provider=remote_file_folder.provider,
+                osf_path=remote_file_folder.id,
+                user=self.user,
+                parent=local_parent_folder,
+                node=local_node
             )
-            yield from self.queue.put(event)
-        elif file_type == File.FOLDER:
-            yield from self.queue.put(CreateFolder(new_file_folder.path))
-        else:
-            raise ValueError('file type is unknown')
+            save(session, new_file_folder)
 
-        return new_file_folder
+            if file_type == File.FILE:
+                event = CreateFile(
+                    path=new_file_folder.path,
+                    download_url=remote_file_folder.download_url,
+                    osf_query=self.osf_query
+                )
+                yield from self.queue.put(event)
+            elif file_type == File.FOLDER:
+                yield from self.queue.put(CreateFolder(new_file_folder.path))
+            else:
+                raise ValueError('file type is unknown')
+
+            return new_file_folder
+        else:
+            AlertHandler.warn('{} contains illegal characters and should be renamed on the OSF to allow for syncing'.format(remote_file_folder.name))
+            print('{} contains illegal characters and should be renamed on the OSF to allow for syncing'.format(remote_file_folder.name))
 
     @asyncio.coroutine
     def create_remote_file_folder(self, local_file_folder, local_node):
