@@ -358,6 +358,8 @@ class OSFEventHandler(FileSystemEventHandler):
             except ItemNotInDB:
                 if isinstance(item, Node):
                     if make_folder_name(item.title, item.osf_id) != dest_path.name and parent == False:
+                        session.delete(item)
+                        save(session)
                         AlertHandler.warn('Cannot manipulate components locally. {} will stop syncing'.format(item.title))
                         print('Cannot manipulate components locally. {} will stop syncing'.format(item.title))
                         return True

@@ -7,13 +7,14 @@ DEV_MODE = False  # TODO (abought): auto-set flag when using `inv start_for_test
 # General settings
 PROJECT_NAME = 'osf-offline'
 PROJECT_AUTHOR = 'cos'
+APPLICATION_SCOPES = 'osf.full_write'
 
 # Base URL for API server; used to fetch data
 API_BASE = 'https://staging-api.osf.io'
 FILE_BASE = 'https://staging-files.osf.io'
 
 # Interval (in seconds) to poll the OSF for server-side file changes
-POLL_DELAY = 5 * 60  # seconds
+POLL_DELAY = 5 * 60  # seconds (set to 1 min now for QA purpose, #todo change it back)
 
 # Time to keep alert messages on screen (in milliseconds); may not be configurable on all platforms
 ALERT_TIME = 10000  # ms

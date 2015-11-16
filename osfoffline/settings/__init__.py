@@ -7,7 +7,6 @@ from appdirs import user_log_dir
 from osfoffline.settings.defaults import *  # noqa
 from osfoffline.utils.path import ensure_folders
 
-
 logger = logging.getLogger(__name__)
 
 

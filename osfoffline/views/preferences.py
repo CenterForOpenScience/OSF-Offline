@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtWidgets import QTreeWidgetItem
+from sqlalchemy.exc import SQLAlchemyError
 
 from osfoffline.database_manager.db import session
 from osfoffline.database_manager.models import User
@@ -19,7 +20,7 @@ from osfoffline.database_manager.utils import save
 from osfoffline.polling_osf_manager.api_url_builder import api_url_for, NODES, USERS
 from osfoffline.polling_osf_manager.remote_objects import RemoteNode
 from osfoffline.utils import path
-from osfoffline.views.rsc.preferences_rc import Ui_Preferences  # REQUIRED FOR GUI
+from osfoffline.views.rsc.preferences_rc import Ui_Settings  # REQUIRED FOR GUI
 import osfoffline.alerts as AlertHandler
 
 
@@ -35,13 +36,14 @@ class Preferences(QDialog):
     PROJECT_SYNC_COLUMN = 0
 
     preferences_closed_signal = pyqtSignal()
+
     containing_folder_updated_signal = pyqtSignal((str,))
 
     def __init__(self):
         super().__init__()
         self._translate = QCoreApplication.translate
         self.containing_folder = ''
-        self.preferences_window = Ui_Preferences()
+        self.preferences_window = Ui_Settings()
         self.preferences_window.setupUi(self)
 
         self.preferences_window.changeFolderButton_2.clicked.connect(self.update_sync_nodes)
@@ -76,7 +78,12 @@ class Preferences(QDialog):
             reply.setDefaultButton(default)
             if reply.exec_() != 0:
                 return event.ignore()
-        self.preferences_closed_signal.emit()
+        try:
+            user = session.query(User).filter(User.logged_in).one()
+        except SQLAlchemyError:
+            pass
+        else:
+            self.preferences_closed_signal.emit()
         event.accept()
 
     def alerts_changed(self):
@@ -127,6 +134,7 @@ class Preferences(QDialog):
         user.guid_for_top_level_nodes_to_sync = guid_list
         save(session, user)
         self.checked_items = guid_list
+        self.close()
 
     def sync_all(self):
         for tree_item, node_id in self.tree_items:
@@ -140,6 +148,7 @@ class Preferences(QDialog):
         if self.isVisible():
             self.preferences_window.tabWidget.setCurrentIndex(tab)
             self.selector(tab)
+            self.raise_()
         else:
             self.preferences_window.tabWidget.setCurrentIndex(tab)
             self.selector(tab)
@@ -154,6 +163,8 @@ class Preferences(QDialog):
             user = session.query(User).filter(User.logged_in).one()
             self.preferences_window.label.setText(self._translate("Preferences", user.full_name))
 
+            self._executor = QtCore.QThread()
+            self.node_fetcher = NodeFetcher()
             self.preferences_window.treeWidget.setCursor(QtCore.Qt.BusyCursor)
             self.node_fetcher.finished[list].connect(self.populate_item_tree)
             self.node_fetcher.moveToThread(self._executor)
@@ -168,8 +179,11 @@ class Preferences(QDialog):
     def populate_item_tree(self, nodes):
         self.reset_tree_widget()
         _translate = QCoreApplication.translate
+        try:
+            user = session.query(User).filter(User.logged_in).one()
+        except SQLAlchemyError:
+            return
 
-        user = session.query(User).filter(User.logged_in).one()
         for node in nodes:
             tree_item = QTreeWidgetItem(self.preferences_window.treeWidget)
             tree_item.setCheckState(self.PROJECT_SYNC_COLUMN, Qt.Unchecked)

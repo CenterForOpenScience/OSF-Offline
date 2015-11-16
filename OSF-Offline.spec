@@ -25,8 +25,8 @@ exe = EXE(pyz,
           debug=False,
           strip=None,
           upx=True,
-          console=False )
+          console=False , icon='circle_logo.icns')
 app = BUNDLE(exe,
              name='OSF-Offline.app',
-             icon=None,
+             icon='circle_logo.icns',
              bundle_identifier=None)

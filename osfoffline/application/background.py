@@ -69,7 +69,7 @@ class BackgroundWorker(threading.Thread):
         logging.debug('Background event loop exited')
 
     def get_current_user(self):
-        return session.query(models.User).filter(models.User.logged_in).one()
+        return session.query(models.User).one()
 
     def start_osf_poller(self):
         self.poller = polling.Poll(self.user, self.loop)

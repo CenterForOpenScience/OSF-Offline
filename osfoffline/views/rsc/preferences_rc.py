@@ -1,22 +1,22 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'preferences.ui'
+# Form implementation generated from reading ui file 'osfoffline/views/rsc/gui/preferences_gui/preferences.ui'
 #
-# Created by: PyQt5 UI code generator 5.5.1
+# Created by: PyQt5 UI code generator 5.4.2
 #
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-class Ui_Preferences(object):
-    def setupUi(self, Preferences):
-        Preferences.setObjectName("Preferences")
-        Preferences.resize(772, 485)
-        self.gridLayout_3 = QtWidgets.QGridLayout(Preferences)
+class Ui_Settings(object):
+    def setupUi(self, Settings):
+        Settings.setObjectName("Settings")
+        Settings.resize(704, 485)
+        self.gridLayout_3 = QtWidgets.QGridLayout(Settings)
         self.gridLayout_3.setObjectName("gridLayout_3")
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
-        self.tabWidget = QtWidgets.QTabWidget(Preferences)
+        self.tabWidget = QtWidgets.QTabWidget(Settings)
         self.tabWidget.setObjectName("tabWidget")
         self.tab = QtWidgets.QWidget()
         self.tab.setObjectName("tab")
@@ -69,12 +69,12 @@ class Ui_Preferences(object):
         self.groupBox_5.setObjectName("groupBox_5")
         self.gridLayout_4 = QtWidgets.QGridLayout(self.groupBox_5)
         self.gridLayout_4.setObjectName("gridLayout_4")
-        self.pushButton = QtWidgets.QPushButton(self.groupBox_5)
-        self.pushButton.setObjectName("pushButton")
-        self.gridLayout_4.addWidget(self.pushButton, 0, 0, 1, 1)
         self.pushButton_2 = QtWidgets.QPushButton(self.groupBox_5)
         self.pushButton_2.setObjectName("pushButton_2")
         self.gridLayout_4.addWidget(self.pushButton_2, 0, 1, 1, 1)
+        self.pushButton = QtWidgets.QPushButton(self.groupBox_5)
+        self.pushButton.setObjectName("pushButton")
+        self.gridLayout_4.addWidget(self.pushButton, 0, 0, 1, 1)
         self.treeWidget = QtWidgets.QTreeWidget(self.groupBox_5)
         self.treeWidget.setToolTipDuration(-1)
         self.treeWidget.setObjectName("treeWidget")
@@ -96,41 +96,41 @@ class Ui_Preferences(object):
         self.horizontalLayout.addWidget(self.tabWidget)
         self.gridLayout_3.addLayout(self.horizontalLayout, 0, 0, 1, 1)
 
-        self.retranslateUi(Preferences)
+        self.retranslateUi(Settings)
         self.tabWidget.setCurrentIndex(1)
-        QtCore.QMetaObject.connectSlotsByName(Preferences)
+        QtCore.QMetaObject.connectSlotsByName(Settings)
 
-    def retranslateUi(self, Preferences):
+    def retranslateUi(self, Settings):
         _translate = QtCore.QCoreApplication.translate
-        Preferences.setWindowTitle(_translate("Preferences", "Preferences"))
-        self.groupBox.setTitle(_translate("Preferences", "System"))
-        self.desktopNotifications.setText(_translate("Preferences", "Show Desktop Notifications"))
-        self.startOnStartup.setText(_translate("Preferences", "Start OSF Offline on Computer Startup"))
-        self.groupBox_6.setTitle(_translate("Preferences", "Choose folder to Place OSF folder in "))
-        self.changeFolderButton.setText(_translate("Preferences", "Change"))
-        self.containingFolderTextEdit.setHtml(_translate("Preferences", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
+        Settings.setWindowTitle(_translate("Settings", "Settings"))
+        self.groupBox.setTitle(_translate("Settings", "System"))
+        self.desktopNotifications.setText(_translate("Settings", "Show Desktop Notifications"))
+        self.startOnStartup.setText(_translate("Settings", "Start OSF Offline on Computer Startup"))
+        self.groupBox_6.setTitle(_translate("Settings", "Choose folder to Place OSF folder in "))
+        self.changeFolderButton.setText(_translate("Settings", "Change"))
+        self.containingFolderTextEdit.setHtml(_translate("Settings", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"
 "</style></head><body style=\" font-family:\'.Helvetica Neue DeskInterface\'; font-size:13pt; font-weight:400; font-style:normal;\">\n"
 "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Ubuntu\'; font-size:11pt;\">/home/himanshu/somefolder/My Project</span></p></body></html>"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("Preferences", "General"))
-        self.groupBox_2.setTitle(_translate("Preferences", "Account"))
-        self.label.setText(_translate("Preferences", "User name"))
-        self.accountLogOutButton.setText(_translate("Preferences", "Log Out"))
-        self.groupBox_4.setTitle(_translate("Preferences", "Project"))
-        self.groupBox_5.setTitle(_translate("Preferences", "Choose Projects to Sync With"))
-        self.pushButton.setText(_translate("Preferences", "Sync All"))
-        self.pushButton_2.setText(_translate("Preferences", "Sync None"))
-        self.treeWidget.headerItem().setText(0, _translate("Preferences", "Sync"))
-        self.treeWidget.headerItem().setText(1, _translate("Preferences", "Projects"))
-        self.changeFolderButton_2.setText(_translate("Preferences", "Update"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("Preferences", "OSF"))
-        self.textEdit_2.setHtml(_translate("Preferences", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("Settings", "General"))
+        self.groupBox_2.setTitle(_translate("Settings", "Account"))
+        self.label.setText(_translate("Settings", "User name"))
+        self.accountLogOutButton.setText(_translate("Settings", "Log Out"))
+        self.groupBox_4.setTitle(_translate("Settings", "Project"))
+        self.groupBox_5.setTitle(_translate("Settings", "Choose Projects to Sync With"))
+        self.pushButton_2.setText(_translate("Settings", "Sync None"))
+        self.pushButton.setText(_translate("Settings", "Sync All"))
+        self.treeWidget.headerItem().setText(0, _translate("Settings", "Sync"))
+        self.treeWidget.headerItem().setText(1, _translate("Settings", "Projects"))
+        self.changeFolderButton_2.setText(_translate("Settings", "Apply Settings"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("Settings", "OSF"))
+        self.textEdit_2.setHtml(_translate("Settings", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"
 "</style></head><body style=\" font-family:\'.Helvetica Neue DeskInterface\'; font-size:13pt; font-weight:400; font-style:normal;\">\n"
 "<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Ubuntu\'; font-size:11pt;\">This is OSF OFFLINE. Please go ahead and use it and make more software based off of it. Please and Thank You. </span></p>\n"
 "<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:\'Ubuntu\'; font-size:11pt;\"><br /></p>\n"
 "<p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'Ubuntu\'; font-size:11pt;\">© Center for Open Science</span></p></body></html>"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_5), _translate("Preferences", "About"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_5), _translate("Settings", "About"))
 

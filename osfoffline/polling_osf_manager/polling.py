@@ -22,6 +22,11 @@ from osfoffline.settings import POLL_DELAY
 
 logger = logging.getLogger(__name__)
 
+try:
+    asyncio.ensure_future
+except AttributeError:
+    asyncio.ensure_future = asyncio.async
+
 
 class Poll(object):
     def __init__(self, user, loop):
@@ -76,9 +81,13 @@ class Poll(object):
         self._loop.call_later(5, self.start)
 
     def start(self):
+
         remote_user = self._loop.run_until_complete(self.get_remote_user())
 
-        self.queue = asyncio.Queue(maxsize=15)
+        try:
+            self.queue = asyncio.JoinableQueue(maxsize=15)
+        except AttributeError:
+            self.queue = asyncio.Queue(maxsize=15)
 
         self.process_job = asyncio.ensure_future(self.process_queue())
         self.poll_job = asyncio.ensure_future(self.check_osf(remote_user))
@@ -181,7 +190,7 @@ class Poll(object):
         nodes_url = api_url_for(USERS, related_type=NODES, user_id=remote_user_id)
 
         while True:
-            logger.info('Begining OSF poll')
+            logger.info('Beginning OSF poll')
             # get local top level nodes
             local_projects = self.user.top_level_nodes
 

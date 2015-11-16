@@ -33,7 +33,7 @@ class SystemTray(QDialog):
         self.launch_osf_action = QAction("Launch OSF", self)
         self.currently_synching_action = QAction("Up to date", self)
         self.currently_synching_action.setDisabled(True)
-        self.preferences_action = QAction("Preferences", self)
+        self.preferences_action = QAction("Settings", self)
         self.about_action = QAction("&About", self)
         self.quit_action = QAction("&Quit", self)
 

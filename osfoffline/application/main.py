@@ -1,7 +1,9 @@
 #!/usr/bin/env python
+import asyncio
 import logging
 import os
 
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -9,12 +11,15 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QMessageBox
+
 
 from osfoffline.application.background import BackgroundWorker
 from osfoffline.database_manager.db import session
 from osfoffline.database_manager.models import User
 from osfoffline.database_manager.utils import save
-from osfoffline.utils.debug import debug_trace
+from osfoffline.exceptions import AuthError
+from osfoffline.utils.authentication import AuthClient
 from osfoffline.utils.validators import validate_containing_folder
 from osfoffline.views.preferences import Preferences
 from osfoffline.views.start_screen import StartScreen
@@ -104,17 +109,22 @@ class OSFApp(QDialog):
     def start(self):
         logger.debug('Start in main called.')
 
-        # todo: HANDLE LOGIN FAILED
         try:
-            user = self.get_current_user()
+            user = session.query(User).filter(User.logged_in).one()
         except MultipleResultsFound:
-            debug_trace()
-            self._logout_all_users()
+            session.query(User).delete()
             self.login_signal.emit()
             return
         except NoResultFound:
             self.login_signal.emit()
             return
+
+        try:
+            # Simple request to ensure user logged in with valid oauth_token
+            user = asyncio.get_event_loop().run_until_complete(AuthClient().populate_user_data(user))
+        except AuthError as e:
+            logging.exception(e.message)
+            self.login_signal.emit()
 
         containing_folder = os.path.dirname(user.osf_local_folder_path)
         while not validate_containing_folder(containing_folder):
@@ -155,33 +165,37 @@ class OSFApp(QDialog):
                 logger.info('Stopping background worker')
                 self.background_worker.stop()
 
-            logger.info('Saving user data')
-            user = session.query(User).filter(User.logged_in).one()
-            save(session, user)
+            try:
+                user = session.query(User).filter(User.logged_in).one()
+            except NoResultFound:
+                pass
+            else:
+                logger.info('Saving user data')
+                save(session, user)
             session.close()
         finally:
             logger.info('Quitting application')
             QApplication.instance().quit()
 
-    def _logout_all_users(self):
-        for user in session.query(User):
-            user.logged_in = False
-            save(session, user)
-
     def get_current_user(self):
-        return session.query(User).filter(User.logged_in).one()
+        return session.query(User).one()
 
     def set_containing_folder_initial(self):
         return QFileDialog.getExistingDirectory(self, "Choose where to place OSF folder")
 
     def logout(self):
-        user = self.get_current_user()
+        user = session.query(User).filter(User.logged_in).one()
         user.logged_in = False
-        save(session, user)
+        try:
+            save(session, user)
+        except SQLAlchemyError:
+            session.query(User).delete()
+
+        self.tray.tray_icon.hide()
         if self.preferences.isVisible():
             self.preferences.close()
-        self.pause()
-        self.login_signal.emit()
+
+        self.start_screen.open_window()
 
     def open_preferences(self):
         logger.debug('pausing for preference modification')
