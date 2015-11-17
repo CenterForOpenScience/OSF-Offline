@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QFileDialog
 
 from osfoffline.application.background import BackgroundWorker
-from osfoffline.database_manager.db import session
+from osfoffline.database_manager.db import drop_db, session
 from osfoffline.database_manager.models import User
 from osfoffline.database_manager.utils import save
 from osfoffline.exceptions import AuthError
@@ -64,6 +64,7 @@ class OSFApp(QDialog):
             (self.tray.preferences_action.triggered, self.open_preferences),
             (self.tray.about_action.triggered, self.start_about_screen),
 
+            (self.tray.drop_db_action.triggered, self.logout_and_drop_db),
             (self.tray.quit_action.triggered, self.quit),
             (self.tray.tray_alert_signal, self.tray.update_currently_synching),
 
@@ -191,7 +192,10 @@ class OSFApp(QDialog):
     def set_containing_folder_initial(self):
         return QFileDialog.getExistingDirectory(self, "Choose where to place OSF folder")
 
-    def logout(self):
+    def logout_and_drop_db(self):
+        self.logout(drop=True)
+
+    def logout(self, drop=False):
         user = session.query(User).filter(User.logged_in).one()
         user.logged_in = False
         try:
@@ -202,6 +206,9 @@ class OSFApp(QDialog):
         self.tray.tray_icon.hide()
         if self.preferences.isVisible():
             self.preferences.close()
+
+        if drop:
+            drop_db()
 
         self.start_screen.open_window()
 
