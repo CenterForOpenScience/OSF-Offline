@@ -98,6 +98,10 @@ class OSFEventHandler(FileSystemEventHandler):
                         session.delete(item_to_replace)
                         save(session)
                     except ItemNotInDB:
+                        # if you move a folder with contents in it, then watchdog gives you a move events for the contents into
+                        # before the actual folder. These child events are unneccessary because folders are objects in our database.
+                        # In addition, these child events fail at this spot because their paths are to the moved version of the contents
+                        # but our database doesnt move the folder until we get the event to move that folder.
                         logging.info('file does not already exist in moved destination: {}'.format(dest_path.full_path))
                     except SQLAlchemyError:
                         logging.exception('Exception caught: Could not save data for {}'.format(item_to_replace))

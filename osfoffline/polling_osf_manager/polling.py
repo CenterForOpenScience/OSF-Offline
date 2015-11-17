@@ -376,7 +376,7 @@ class Poll(object):
             if possibly_new_remote_file_folder:
                 remote_file_folder = possibly_new_remote_file_folder
         else:
-            raise ValueError('in some weird state. figure it out.')
+            raise ValueError('Invalid State.')
 
         assert local_file_folder is not None
         assert remote_file_folder is not None
@@ -501,7 +501,7 @@ class Poll(object):
         old_path = local_node.path
         local_node.title = remote_node.name
 
-        local_node.category = remote_node.category
+        local_node.category = remote_node.category if remote_node.category.lower() == Node.PROJECT else Node.COMPONENT
 
         save(session, local_node)
 
