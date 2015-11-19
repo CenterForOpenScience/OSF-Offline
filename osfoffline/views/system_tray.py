@@ -36,6 +36,7 @@ class SystemTray(QDialog):
         self.currently_synching_action.setDisabled(True)
         self.preferences_action = QAction("Settings", self)
         self.about_action = QAction("&About", self)
+        self.drop_db_action = QAction("Reset Application", self)
         self.quit_action = QAction("&Quit", self)
 
     def create_tray_icon(self):
@@ -48,6 +49,8 @@ class SystemTray(QDialog):
         self.tray_icon_menu.addSeparator()
         self.tray_icon_menu.addAction(self.preferences_action)
         self.tray_icon_menu.addAction(self.about_action)
+        self.tray_icon_menu.addSeparator()
+        self.tray_icon_menu.addAction(self.drop_db_action)
         self.tray_icon_menu.addSeparator()
         self.tray_icon_menu.addAction(self.quit_action)
         self.tray_icon = QSystemTrayIcon(self)
