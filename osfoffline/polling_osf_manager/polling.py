@@ -378,25 +378,23 @@ class Poll(object):
         else:
             raise ValueError('in some weird state. figure it out.')
 
-        assert local_file_folder is not None
-        assert remote_file_folder is not None
-
         # recursively handle folder's children
-        if local_file_folder.is_folder:
+        if local_file_folder is not None and remote_file_folder is not None:
+            if local_file_folder.is_folder:
 
-            remote_children = yield from self.osf_query.get_child_files(remote_file_folder)
+                remote_children = yield from self.osf_query.get_child_files(remote_file_folder)
 
-            local_remote_file_folders = self.make_local_remote_tuple_list(local_file_folder.files, remote_children)
+                local_remote_file_folders = self.make_local_remote_tuple_list(local_file_folder.files, remote_children)
 
-            for local, remote in local_remote_file_folders:
-                yield from self._check_file_folder(
-                    local,
-                    remote,
-                    local_parent_file_folder=local_file_folder,
-                    local_node=local_node
-                )
+                for local, remote in local_remote_file_folders:
+                    yield from self._check_file_folder(
+                        local,
+                        remote,
+                        local_parent_file_folder=local_file_folder,
+                        local_node=local_node
+                    )
 
-                    # if we are unable to get children, then we do not try to get and manipulate children
+                        # if we are unable to get children, then we do not try to get and manipulate children
 
     # Create
     @asyncio.coroutine
@@ -435,33 +433,43 @@ class Poll(object):
 
         # NOTE: develop is not letting me download files. dont know why.
 
-        # create local file folder in db
-        file_type = File.FILE if isinstance(remote_file_folder, RemoteFile) else File.FOLDER
-        new_file_folder = File(
-            name=remote_file_folder.name,
-            type=file_type,
-            osf_id=remote_file_folder.id,
-            provider=remote_file_folder.provider,
-            osf_path=remote_file_folder.id,
-            user=self.user,
-            parent=local_parent_folder,
-            node=local_node
-        )
-        save(session, new_file_folder)
+        illegal_chars = ['<', '>', ':', '"', '/', '\\', '|', '?', '*']
+        illegal_names = ['con', 'prn', 'aux', 'nul', 'com1', 'com2', 'com3', 'com4', 'com5', 'com6', 'com7', 'com8', 'com9', 'lpt1', 'lpt2', 'lpt3', 'lpt4', 'lpt5', 'lpt6', 'lpt7', 'lpt8', 'lpt9']
+        if not any(x in remote_file_folder.name for x in illegal_chars):
+            if remote_file_folder.name.split('.', 1)[0].lower() not in illegal_names:
+                # create local file folder in db
+                file_type = File.FILE if isinstance(remote_file_folder, RemoteFile) else File.FOLDER
+                new_file_folder = File(
+                    name=remote_file_folder.name,
+                    type=file_type,
+                    osf_id=remote_file_folder.id,
+                    provider=remote_file_folder.provider,
+                    osf_path=remote_file_folder.id,
+                    user=self.user,
+                    parent=local_parent_folder,
+                    node=local_node
+                )
+                save(session, new_file_folder)
 
-        if file_type == File.FILE:
-            event = CreateFile(
-                path=new_file_folder.path,
-                download_url=remote_file_folder.download_url,
-                osf_query=self.osf_query
-            )
-            yield from self.queue.put(event)
-        elif file_type == File.FOLDER:
-            yield from self.queue.put(CreateFolder(new_file_folder.path))
+                if file_type == File.FILE:
+                    event = CreateFile(
+                        path=new_file_folder.path,
+                        download_url=remote_file_folder.download_url,
+                        osf_query=self.osf_query
+                    )
+                    yield from self.queue.put(event)
+                elif file_type == File.FOLDER:
+                    yield from self.queue.put(CreateFolder(new_file_folder.path))
+                else:
+                    raise ValueError('file type is unknown')
+
+                return new_file_folder
+            else:
+                AlertHandler.warn('{} is a reserved word and therefore cannot be created as named.  Rename this on the OSF to allow for syncing'.format(remote_file_folder.name.split('.', 1)[0]))
+                print('{} is a reserved word and therefore cannot be created as named.  Rename this on the OSF to allow for syncing'.format(remote_file_folder.name.split('.', 1)[0]))
         else:
-            raise ValueError('file type is unknown')
-
-        return new_file_folder
+            AlertHandler.warn('{} contains illegal characters and should be renamed on the OSF to allow for syncing'.format(remote_file_folder.name))
+            print('{} contains illegal characters and should be renamed on the OSF to allow for syncing'.format(remote_file_folder.name))
 
     @asyncio.coroutine
     def create_remote_file_folder(self, local_file_folder, local_node):
