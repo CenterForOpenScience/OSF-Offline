@@ -1,7 +1,8 @@
 import asyncio
-import json
 import concurrent
+import json
 import logging
+import os
 
 import aiohttp
 
@@ -10,6 +11,8 @@ from osfoffline.polling_osf_manager.remote_objects \
 from osfoffline.database_manager.models import File
 from osfoffline.polling_osf_manager.api_url_builder import api_url_for, NODES, RESOURCES, FILES
 import osfoffline.alerts as AlertHandler
+from osfoffline.exceptions.poll_exceptions import FileUpdatedDuringStreamException
+from osfoffline.database_manager.db import session
 
 OK = 200
 CREATED = 201
@@ -133,7 +136,13 @@ class OSFQuery(object):
         files_url = api_url_for(RESOURCES, node_id=local_file.node.osf_id, provider=local_file.provider,
                                 file_id=parent_osf_id)
         file = open(local_file.path, 'rb')
-        resp_json = yield from self.make_request(files_url, method="PUT", params=params, data=file, get_json=True)
+
+        file_lock = asyncio.Lock()
+        file_data = safe_file_stream(file, file_lock)
+        file_size = os.path.getsize(local_file.path)
+
+        resp_json = yield from self.make_request(files_url, method="PUT", params=params, data=file_data, get_json=True,
+            headers={'Content-Length': str(file_size)}, local_file=local_file, lock=file_lock)
         AlertHandler.info(local_file.name, AlertHandler.UPLOAD)
 
         return RemoteFile(resp_json['data'])
@@ -242,7 +251,8 @@ class OSFQuery(object):
         resp.close()
 
     @asyncio.coroutine
-    def make_request(self, url, method=None, params=None, expects=None, get_json=False, timeout=180, data=None):
+    def make_request(self, url, method=None, params=None, expects=None, get_json=False,
+                     timeout=180, data=None, headers=None, local_file=None, lock=None):
         yield from self.throttler.acquire()
 
         if method is None:
@@ -251,11 +261,17 @@ class OSFQuery(object):
         request = self.request_session.request(
             url=url,
             method=method.upper(),
+            headers=headers,
             params=params,
             data=data
         )
         try:
-            response = yield from asyncio.wait_for(request, timeout)
+            if lock and local_file:
+                check_task = asyncio.ensure_future(check_for_changes(local_file, lock))
+                response = yield from asyncio.wait_for(request, timeout)
+                check_task.cancel()
+            else:
+                response = yield from asyncio.wait_for(request, timeout)
         finally:
             self.throttler.release()
 
@@ -276,3 +292,42 @@ class OSFQuery(object):
 
     def close(self):
         self.request_session.close()
+
+
+@asyncio.coroutine
+def safe_file_stream(file, lock):
+    """ Stream chunks from a file. Raises error if a file is changed
+        during streaming, as indicated by the lock.
+
+        :param file:                file to stream
+        :param asyncio.Lock lock:   lock indicating if a file has changed
+    """
+    while True:
+        # logging.debug('safely streaming')  # Commented out for performance, uncomment for testing.
+        if lock.locked():
+            raise FileUpdatedDuringStreamException('File changed during upload')
+        chunk = file.read(1024)
+        if not chunk:
+            break
+        yield chunk
+        yield from asyncio.sleep(0)
+
+@asyncio.coroutine
+def check_for_changes(local_file, lock):
+    """ Checks to see if a File object has changed, according to the database.
+
+        :param File local_file:     original file data being checked
+        :param asyncio.Locl locks:  Lock that will tell safe_file_stream that a change has occurred
+    """
+    orig_modified = local_file.date_modified
+    while True:
+        # logging.debug('checking for changes')  # Commented out for performance, uncomment for testing.
+        try:
+            maybe_updated = session.query(File).filter(File.id == local_file.id).one()
+        except NoResultFound as e:
+            logging.exception('File deleted: {}'.format(e))
+            lock.acquire()
+        else:
+            if maybe_updated.date_modified != orig_modified or maybe_updated.locally_deleted:
+                lock.acquire()
+        yield from asyncio.sleep(1)
