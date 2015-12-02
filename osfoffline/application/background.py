@@ -3,8 +3,11 @@ import asyncio
 import logging
 import threading
 
-from watchdog.observers import Observer
-
+from watchdog.observers.api import (
+    BaseObserver,
+    DEFAULT_OBSERVER_TIMEOUT
+)
+from osfoffline.filesystem_manager.top_down_move_event_emitter import TopDownMovePollingEmitter
 
 from osfoffline.database_manager import models
 from osfoffline.database_manager.db import session
@@ -87,10 +90,11 @@ class BackgroundWorker(threading.Thread):
             loop=self.loop
         )
 
-        # todo: if config actually has legitimate data. use it.
-
         # start
-        self.observer = Observer()  # create observer. watched for events on files.
+
+        # create observer. watched for events on files.
+        self.observer = BaseObserver(TopDownMovePollingEmitter, DEFAULT_OBSERVER_TIMEOUT)
+
         # attach event handler to observed events. make observer recursive
         self.observer.schedule(self.event_handler, self.osf_folder, recursive=True)
 
