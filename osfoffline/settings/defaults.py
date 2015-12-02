@@ -11,7 +11,7 @@ FILE_BASE = 'https://test-files.osf.io'
 REMOTE_CHECK_INTERVAL = 60 * 5  # Every 5 minutes
 
 # Time to keep alert messages on screen (in milliseconds); may not be configurable on all platforms
-ALERT_TIME = 1000  # ms
+ALERT_TIME = 10000  # ms
 
 LOG_LEVEL = 'INFO'
 

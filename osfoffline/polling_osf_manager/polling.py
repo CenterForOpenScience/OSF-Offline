@@ -202,7 +202,7 @@ class Poll(object):
         nodes_url = api_url_for(USERS, related_type=NODES, user_id=remote_user_id)
 
         while True:
-            logger.info('Begining OSF poll')
+            logger.info('Beginning OSF poll')
             # get local top level nodes
             local_projects = self.user.top_level_nodes
 
@@ -256,6 +256,9 @@ class Poll(object):
             # If our DB says nothing in local node has been modified
             yield from self.delete_local_node(local_node)
             return
+        elif not os.path.exists(local_node.path):
+            yield from self.delete_local_node(local_node)
+            local_node = yield from self.create_local_node(remote_node, local_parent_node)
         elif local_node is not None and remote_node is not None:
             if local_node.title != remote_node.name:
                 yield from self.modify_local_node(local_node, remote_node)
@@ -422,7 +425,6 @@ class Poll(object):
             parent=local_parent_node
         )
         save(session, new_node)
-
         if local_parent_node:
             yield from self._ensure_components_folder(local_parent_node)
         yield from self.queue.put(CreateFolder(new_node.path))

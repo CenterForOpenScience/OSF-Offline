@@ -12,7 +12,7 @@ from watchdog.events import FileSystemEventHandler, DirModifiedEvent, DirCreated
 from osfoffline.database_manager.models import Node, File, User
 from osfoffline.database_manager.db import session
 from osfoffline.database_manager.utils import save
-from osfoffline.utils.path import ProperPath
+from osfoffline.utils.path import ProperPath, make_folder_name
 from osfoffline.exceptions.item_exceptions import ItemNotInDB
 import osfoffline.alerts as AlertHandler
 
@@ -204,6 +204,7 @@ class OSFEventHandler(FileSystemEventHandler):
         """
 
         if isinstance(event, DirModifiedEvent):
+            # AlertHandler.warn('Modifying folders is not recommended')
             return
         try:
             src_path = ProperPath(event.src_path, event.is_directory)
@@ -280,8 +281,11 @@ class OSFEventHandler(FileSystemEventHandler):
 
     def dispatch(self, event):
         # basically, ignore all events that occur for 'Components' file or folder
-        if self._event_is_for_components_file_folder(event):
+        if self._is_illegal(event):
             return
+
+        # if self._event_is_for_reserved_word(event):
+        #     return
 
         _method_map = {
             EVENT_TYPE_MODIFIED: self.on_modified,
@@ -325,13 +329,110 @@ class OSFEventHandler(FileSystemEventHandler):
                 return file_folder
         raise ItemNotInDB('item has path: {}'.format(path.full_path))
 
-    def _event_is_for_components_file_folder(self, event):
+    # def _event_is_for_reserved_word(self, event):
+    #     if ProperPath(event.src_path, True).name == 'Components':
+    #         print('Cannot rename the Components folder')
+    #         return True
+    #     try:
+    #         if ProperPath(event.dest_path, True).name == 'Components':
+    #             AlertHandler.warn('Cannot have a custom file or folder named Components')
+    #             print('Cannot have a custom file or folder named Components')
+    #             return True
+    #         return False
+    #     except AttributeError:
+    #         return False
+    #
+    # def _event_is_an_illegal_rename(self, event):
+    #     src_path = ProperPath(event.src_path, event.is_directory)
+    #     try:
+    #         dest_path = ProperPath(event.dest_path, event.is_directory)
+    #     except AttributeError:
+    #         return False
+    #     try:
+    #         item = self._get_item_by_path(src_path)
+    #     except ItemNotInDB:
+    #         return True
+    #     try:
+    #         new_parent_item = self._get_parent_item_from_path(dest_path)
+    #     except ItemNotInDB:
+    #         if isinstance(item, Node):
+    #             if make_folder_name(item.title, item.osf_id) != dest_path.name:
+    #                 AlertHandler.warn('Cannot manipulate components locally. {} will stop syncing'.format(item.title))
+    #                 print('Cannot manipulate components locally. {} will stop syncing'.format(item.title))
+    #         else:
+    #             curr = item.node
+    #             running = True
+    #             while (running):
+    #                 if not os.path.isdir(curr.path):
+    #                     return True
+    #                 if curr.top_level:
+    #                     running = False
+    #                 else:
+    #                     curr = curr.node
+    #             raise
+    #     return False
+
+    def _is_illegal(self, event):
+        reserved_words = ['Components']
+        src_path = ProperPath(event.src_path, event.is_directory)
+        item = None
+        parent = False
         try:
-            if ProperPath(event.src_path, True).name == 'Components':
-                return True
+            dest_path = ProperPath(event.dest_path, event.is_directory)
             try:
-                return ProperPath(event.dest_path, True).name == 'Components'
-            except AttributeError:
-                return False
-        except Exception:
-            pass  # Similar path-related error will occur and be caught later, better error message will be displayed then
+                item = self._get_item_by_path(src_path)
+            except ItemNotInDB:
+                # Either is the components folder or something that was previously illegally named
+                try:
+                    # Item is the components folder so lets see if there is more stuff above it
+                    item = self._get_item_by_path(src_path.parent)
+                    # Fixme: probably could use another assert statement somewhere
+                    parent = True
+                    assert isinstance(item, Node)
+                except ItemNotInDB:
+                    # Probably an item that was illegal and now is being renamed again
+                    try:
+                        # if this is true then they renamed it back to something legal
+                        item = self._get_item_by_path(dest_path)
+                        # Its legal now but no updates are needed
+                        return True
+                    except ItemNotInDB:
+                        # still not a legal name
+                        if dest_path.name != src_path.name:
+                            AlertHandler.warn('{} will not sync until it is renamed properly'.format(dest_path.name))
+                            print('{} will not sync until it is renamed properly'.format(dest_path.name))
+                        return True
+            try:
+                new_parent_item = self._get_parent_item_from_path(dest_path)
+            except ItemNotInDB:
+                if isinstance(item, Node):
+                    if make_folder_name(item.title, item.osf_id) != dest_path.name and parent == False:
+                        AlertHandler.warn('Cannot manipulate components locally. {} will stop syncing'.format(item.title))
+                        print('Cannot manipulate components locally. {} will stop syncing'.format(item.title))
+                        return True
+                else:
+                    curr = item.node
+                    running = True
+                    while (running):
+                        if not os.path.isdir(curr.path):
+                            return True
+                        if curr.top_level:
+                            running = False
+                            return False
+                        else:
+                            curr = curr.node
+                    raise
+            if dest_path.name in reserved_words:
+                AlertHandler.warn('Cannot have a custom file or folder named {}'.format(dest_path.name))
+                print('Cannot have a custom file or folder named {}'.format(dest_path.name))
+                return True
+        except AttributeError:
+            pass
+            #Fixme: Don't know what to do here
+        if src_path.name in reserved_words:
+            if event.event_type == 'moved':
+                AlertHandler.warn('Cannot rename the {} folder'.format(src_path.name))
+                print('Cannot rename the {} folder'.format(src_path.name))
+                return True
+
+        return False
