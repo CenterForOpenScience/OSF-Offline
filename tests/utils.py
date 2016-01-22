@@ -1,3 +1,5 @@
+import shutil
+import tempfile
 import functools
 from multiprocessing.pool import ThreadPool
 import time
@@ -72,3 +74,22 @@ def fail_after(timeout=2):
             return result.get()
         return _test_wrapper
     return test_wrapper
+
+
+# h/t http://stackoverflow.com/questions/6587516/how-to-concisely-create-a-temporary-file-that-is-a-copy-of-another-file-in-pytho
+def create_temporary_copy(src):
+    # create the temporary file in read/write mode (r+)
+    tf = tempfile.TemporaryFile(mode='r+b', prefix='__', suffix='.tmp')
+
+    # on windows, we can't open the the file again, either manually
+    # or indirectly via shutil.copy2, but we *can* copy
+    # the file directly using file-like objects, which is what
+    # TemporaryFile returns to us.
+    # Use `with open` here to automatically close the source file
+    with open(src, 'r+b') as f:
+        shutil.copyfileobj(f, tf)
+
+    # rewind the temporary file, otherwise things will go
+    # tragically wrong on Windows
+    tf.seek(0)
+    return tf

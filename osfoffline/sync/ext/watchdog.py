@@ -11,16 +11,23 @@ from watchdog.events import (
     EVENT_TYPE_CREATED,
     EVENT_TYPE_MODIFIED,
     DirModifiedEvent,
+    DirMovedEvent,
     FileModifiedEvent,
+    FileMovedEvent,
     PatternMatchingEventHandler,
 )
 
 from osfoffline import settings
 from osfoffline.exceptions import NodeNotFound
+from osfoffline import utils
 
 
 logger = logging.getLogger(__name__)
 
+def sha256_from_local_path(path):
+    node = utils.extract_node(path)
+    db_file = utils.local_to_db(path, node, check_is_folder=False)
+    return db_file.sha256
 
 class ConsolidatedEventHandler(PatternMatchingEventHandler):
 
@@ -50,6 +57,10 @@ class ConsolidatedEventHandler(PatternMatchingEventHandler):
             consolidate = event.is_directory
             if event.event_type == EVENT_TYPE_DELETED:
                 consolidate = (parts in self._event_cache)
+                # Also stash the deleted file's name and sha256. This allows us to consolidate moves
+                # represented as a delete/create as actual move events
+                event.sha256 = sha256_from_local_path(event.src_path)
+                event.basename = os.path.basename(event.src_path)
 
             if event.event_type == EVENT_TYPE_MODIFIED:
                 if event.is_directory:
@@ -61,8 +72,35 @@ class ConsolidatedEventHandler(PatternMatchingEventHandler):
                 )
                 for event in move_events:
                     return
+
             if event.event_type == EVENT_TYPE_CREATED:
-                self._create_cache.append(event)
+                event_basename = os.path.basename(event.src_path)
+                if event.is_directory:
+                    self._create_cache.append(event)
+                else:
+                    # Check the event cache for existing delete events matching this filename. Later
+                    # the more reliable sha256 is used to infer whether or not two files are the same
+                    delete_events = (
+                        evt
+                        for evt in self._event_cache.children()
+                        if evt.event_type == EVENT_TYPE_DELETED and evt.basename == event_basename
+                    )
+                    consolidate = False
+                    for evt in delete_events:  # explicitly breaks after a single iteration
+                        evt_sha256 = sha256_from_local_path(event.src_path)
+                        if evt_sha256 == evt.sha256:
+                            # If the file names and shas are identical, consolidate a
+                            # delete followed by a create as a move
+                            consolidate = True
+                            Event = DirMovedEvent if event.is_directory else FileMovedEvent
+                            event = Event(
+                                src_path=evt.src_path,
+                                dest_path=event.src_path
+                            )
+                            self._event_cache[parts] = event
+                            break
+                    if not consolidate:
+                        self._create_cache.append(event)
             else:
                 if not consolidate and parts in self._event_cache:
                     ev = self._event_cache[parts]

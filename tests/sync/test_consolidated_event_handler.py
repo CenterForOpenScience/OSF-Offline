@@ -1,8 +1,9 @@
 import os
-from time import sleep
 import shutil
+from pathlib import Path
 
 import pytest
+import mock
 
 from watchdog.events import (  # noqa
     FileDeletedEvent,
@@ -16,9 +17,10 @@ from watchdog.events import (  # noqa
 )
 
 from osfoffline import settings
+from osfoffline import utils as osfo_utils
 
 from tests.base import OSFOTestBase
-from tests.utils import unique_file_name, unique_folder_name
+from tests.utils import unique_file_name, unique_folder_name, create_temporary_copy
 from tests.sync.utils import TestSyncWorker
 
 
@@ -84,7 +86,32 @@ class TestConsolidatedEventHandler(OSFOTestBase):
         file_path = self.root_dir.join(
             project['files'][0]['children'][0]['rel_path'].lstrip(os.path.sep)
         )
-        os.rename(str(file_path), 'foobar.baz')
+        # Use move rather than rename for windows compliance
+        shutil.move(str(file_path), 'foobar.baz')
+        self.sync_worker.flushed.wait()
+        assert len(self.sync_worker._event_cache.children()) == 1, \
+            "exactly one event captured"
+        assert isinstance(
+            self.sync_worker._event_cache.children()[0],
+            FileMovedEvent
+        ) is True, \
+            "the one captured event is a FileMovedEvent"
+
+    @mock.patch('osfoffline.sync.ext.watchdog.sha256_from_local_path')
+    def test_rename_file_delete_create(self, mock_sha256_from_local_path):
+        # test against delete/create moves on windows
+        project = self.PROJECT_STRUCTURE[0]
+        file_path = self.root_dir.join(
+            project['files'][0]['children'][0]['rel_path'].lstrip(os.path.sep)
+        )
+
+        sha256 = osfo_utils.hash_file(Path(str(file_path)))
+        mock_sha256_from_local_path.return_value = sha256
+
+        tmpfile = create_temporary_copy(str(file_path))
+        os.remove(str(file_path))
+        with open(str(file_path), 'w+b') as fp:
+            shutil.copyfileobj(tmpfile, fp)
         self.sync_worker.flushed.wait()
         assert len(self.sync_worker._event_cache.children()) == 1, \
             "exactly one event captured"
@@ -110,7 +137,10 @@ class TestConsolidatedEventHandler(OSFOTestBase):
         ) is True, \
             "the one captured event is a FileMovedEvent"
 
-    def test_delete_file(self):
+    @mock.patch('osfoffline.sync.ext.watchdog.sha256_from_local_path')
+    def test_delete_file(self, mock_sha256_from_local_path):
+        mock_sha256_from_local_path.return_value = None
+
         project = self.PROJECT_STRUCTURE[0]
         file_path = self.root_dir.join(
             project['files'][0]['children'][0]['rel_path'].lstrip(os.path.sep)
@@ -204,7 +234,10 @@ class TestConsolidatedEventHandler(OSFOTestBase):
         ) is True, \
             "the one captured event is a DirMovedEvent"
 
-    def test_delete_folder(self):
+    @mock.patch('osfoffline.sync.ext.watchdog.sha256_from_local_path')
+    def test_delete_folder(self, mock_sha256_from_local_path):
+        mock_sha256_from_local_path.return_value = None
+
         project = self.PROJECT_STRUCTURE[0]
         dir_path = self.root_dir.join(
             project['files'][1]['rel_path'].lstrip(os.path.sep)
@@ -219,7 +252,10 @@ class TestConsolidatedEventHandler(OSFOTestBase):
         ) is True, \
             "the one captured event is a DirDeletedEvent"
 
-    def test_delete_folder_with_children(self):
+    @mock.patch('osfoffline.sync.ext.watchdog.sha256_from_local_path')
+    def test_delete_folder_with_children(self, mock_sha256_from_local_path):
+        mock_sha256_from_local_path.return_value = None
+
         project = self.PROJECT_STRUCTURE[0]
         dir_path = self.root_dir.join(
             project['files'][0]['rel_path'].lstrip(os.path.sep)
