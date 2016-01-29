@@ -9,10 +9,10 @@ from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtWidgets import QTreeWidgetItem
-from PyQt5.QtWidgets import QApplication
 from sqlalchemy.orm.exc import NoResultFound
 
 from osfoffline import language
+from osfoffline.utils import waiting_effects
 from osfoffline.client.osf import OSFClient
 from osfoffline.database import Session
 from osfoffline.database.models import User, Node
@@ -149,7 +149,6 @@ class Preferences(QDialog, Ui_Settings):
 
             self._executor = QtCore.QThread()
             self.node_fetcher = NodeFetcher()
-            QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
             self.node_fetcher.finished[list].connect(self.populate_item_tree)
             self.node_fetcher.finished[int].connect(self.item_load_error)
             self.node_fetcher.moveToThread(self._executor)
@@ -182,7 +181,6 @@ class Preferences(QDialog, Ui_Settings):
 
         self.treeWidget.resizeColumnToContents(self.PROJECT_SYNC_COLUMN)
         self.treeWidget.resizeColumnToContents(self.PROJECT_NAME_COLUMN)
-        QApplication.restoreOverrideCursor()
 
     @QtCore.pyqtSlot(int)
     def item_load_error(self, error_code):
@@ -198,6 +196,9 @@ class Preferences(QDialog, Ui_Settings):
 class NodeFetcher(QtCore.QObject):
     finished = QtCore.pyqtSignal([list], [int])
 
+    
+
+    @waiting_effects
     def fetch(self):
         """Fetch the list of nodes associated with a user. Returns either a list, or an (int) error code."""
         try:
