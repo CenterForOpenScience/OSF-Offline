@@ -24,7 +24,7 @@ from osfoffline.sync.remote import RemoteSyncWorker
 logger = logging.getLogger(__name__)
 
 def waiting_effects(function):
-    @functools.wraps(function)
+    @wraps(function)
     def wrap(*args, **kwargs):
         QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
         try:
