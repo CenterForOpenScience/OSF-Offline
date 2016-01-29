@@ -1,9 +1,6 @@
 import hashlib
 import os
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import QCoreApplication
-from PyQt5.QtWidgets import QApplication
 from sqlalchemy.orm.exc import NoResultFound
 
 from osfoffline import settings
@@ -91,15 +88,3 @@ def _remote_root(db):
             osf.NodeStorage.load(osf.OSFClient().request_session, db.node.id)
             if storage.provider == db.provider
     )
-
-def waiting_effects(function):
-        def wrap(*args, **kwargs):
-            QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
-            try:
-                function(*args, **kwargs)
-            except Exception as e:
-                logger.exception(e.args[0])
-                raise e
-            finally:
-                QApplication.restoreOverrideCursor()
-        return wrap

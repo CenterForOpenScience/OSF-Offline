@@ -1,5 +1,6 @@
 import os
 import logging
+from functools import wraps
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QCoreApplication
@@ -9,10 +10,10 @@ from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtWidgets import QTreeWidgetItem
+from PyQt5.QtWidgets import QApplication
 from sqlalchemy.orm.exc import NoResultFound
 
 from osfoffline import language
-from osfoffline.utils import waiting_effects
 from osfoffline.client.osf import OSFClient
 from osfoffline.database import Session
 from osfoffline.database.models import User, Node
@@ -21,6 +22,19 @@ from osfoffline.gui.qt.generated.preferences import Ui_Settings
 from osfoffline.sync.remote import RemoteSyncWorker
 
 logger = logging.getLogger(__name__)
+
+def waiting_effects(function):
+    @functools.wraps(function)
+    def wrap(*args, **kwargs):
+        QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
+        try:
+            function(*args, **kwargs)
+        except Exception as e:
+            logger.exception('Error occurred in {}'.format(function.__name__))
+            raise e
+        finally:
+            QApplication.restoreOverrideCursor()
+    return wrap
 
 
 class Preferences(QDialog, Ui_Settings):
@@ -195,8 +209,6 @@ class Preferences(QDialog, Ui_Settings):
 
 class NodeFetcher(QtCore.QObject):
     finished = QtCore.pyqtSignal([list], [int])
-
-    
 
     @waiting_effects
     def fetch(self):
