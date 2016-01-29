@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import QDialog
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtWidgets import QTreeWidgetItem
+from PyQt5.QtWidgets import QApplication
 from sqlalchemy.orm.exc import NoResultFound
 
 from osfoffline import language
@@ -148,12 +149,13 @@ class Preferences(QDialog, Ui_Settings):
 
             self._executor = QtCore.QThread()
             self.node_fetcher = NodeFetcher()
-            self.treeWidget.setCursor(QtCore.Qt.BusyCursor)
+            QApplication.setOverrideCursor(QtCore.Qt.WaitCursor)
             self.node_fetcher.finished[list].connect(self.populate_item_tree)
             self.node_fetcher.finished[int].connect(self.item_load_error)
             self.node_fetcher.moveToThread(self._executor)
             self._executor.started.connect(self.node_fetcher.fetch)
             self._executor.start()
+
 
     def reset_tree_widget(self):
         self.tree_items.clear()
@@ -180,7 +182,7 @@ class Preferences(QDialog, Ui_Settings):
 
         self.treeWidget.resizeColumnToContents(self.PROJECT_SYNC_COLUMN)
         self.treeWidget.resizeColumnToContents(self.PROJECT_NAME_COLUMN)
-        self.treeWidget.unsetCursor()
+        QApplication.restoreOverrideCursor()
 
     @QtCore.pyqtSlot(int)
     def item_load_error(self, error_code):
