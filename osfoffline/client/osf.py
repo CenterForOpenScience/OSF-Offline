@@ -83,6 +83,9 @@ class BaseResource(abc.ABC):
 
         if isinstance(data['data'], list):
             l = data['data']
+            for node in l:
+                if 'write' not in node['attributes']['current_user_permissions']:
+                    l.remove(node)
             while data['links'].get('next'):
                 resp = request_session.get(data['links']['next'], params={'page[size]': 250})
                 data = resp.json()
@@ -93,13 +96,15 @@ class BaseResource(abc.ABC):
     def _fetch_related(self, relationship, data):
         items = data['data']
         for item in items:
-            yield item
+            if not relationship == 'children' or 'write' in item['attributes']['current_user_permissions']:
+                yield item
         if data['links'].get('next'):
             for item in self.fetch_related(
                     relationship,
                     next_url=data['links']['next']
             ):
-                yield item
+                if not relationship == 'children' or 'write' in item['attributes']['current_user_permissions']:
+                    yield item
 
     def fetch_related(self, relationship, *, query=None, next_url=None):
         relation = self.raw['relationships'].get(relationship)
@@ -113,10 +118,16 @@ class BaseResource(abc.ABC):
                 url,
                 params=params
         )
+        if resp.status_code == 502:
+            resp = self.request_session.get(
+                url
+            )
         data = resp.json()
         items = data['data']
         if not isinstance(items, list):
-            return items
+            if not relationship == 'children' or 'write' in items['attributes']['current_user_permissions']:
+                return items
+            return None
         else:
             return self._fetch_related(relationship, data)
 

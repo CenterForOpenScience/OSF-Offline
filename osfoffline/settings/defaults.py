@@ -13,10 +13,10 @@ DEBUG = False
 DRY = False
 
 # Base URL for API server; used to fetch data
-OSF_URL = 'https://test.osf.io'
-API_BASE = 'https://test-api.osf.io'
+OSF_URL = 'https://staging.osf.io'
+API_BASE = 'https://staging-api.osf.io'
 API_VERSION = 'v2'
-FILE_BASE = 'https://test-files.osf.io'
+FILE_BASE = 'https://staging-files.osf.io'
 
 # Interval (in seconds) to poll the OSF for server-side file changes
 REMOTE_CHECK_INTERVAL = 60 * 5  # Every 5 minutes

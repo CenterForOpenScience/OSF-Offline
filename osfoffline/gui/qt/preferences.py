@@ -22,6 +22,18 @@ from osfoffline.sync.remote import RemoteSyncWorker
 logger = logging.getLogger(__name__)
 
 
+def get_parent_id(node):
+    try:
+        parent = node.raw['relationships']['parent']
+    except KeyError:
+        return None
+
+    data = parent['links']['related']['href'].split('/')
+
+    if data[-1]:
+        return data[-1]
+    return data[-2]
+
 class Preferences(QDialog, Ui_Settings):
     """
     This class is a wrapper for the Ui_Preferences and its controls
@@ -206,6 +218,10 @@ class NodeFetcher(QtCore.QObject):
             logger.exception('Error fetching list of nodes')
             result = -1
         else:
-            result = [node for node in user_nodes if 'parent' not in node.raw['relationships']]
+            nodes_id = [n.id for n in user_nodes]
+            result = []
+            for node in user_nodes:
+                if 'parent' not in node.raw['relationships'] or get_parent_id(node) not in nodes_id:
+                    result.append(node)
 
         self.finished[type(result)].emit(result)
