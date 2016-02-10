@@ -1,5 +1,6 @@
 import os
 import logging
+from distutils.dir_util import copy_tree
 
 from PyQt5 import QtCore
 from PyQt5.QtCore import QCoreApplication
@@ -53,6 +54,7 @@ class Preferences(QDialog, Ui_Settings):
         self._translate = QCoreApplication.translate
 
         self.changeFolderButton_2.clicked.connect(self.update_sync_nodes)
+        self.changeFolderButton.clicked.connect(self.update_containing_folder)
         self.pushButton.clicked.connect(self.sync_all)
         self.pushButton_2.clicked.connect(self.sync_none)
         self.tabWidget.currentChanged.connect(self.selector)
@@ -62,6 +64,9 @@ class Preferences(QDialog, Ui_Settings):
 
         self._executor = QtCore.QThread()
         self.node_fetcher = NodeFetcher()
+
+    def update_containing_folder(self):
+        self.set_containing_folder(save_setting=True)
 
     def closeEvent(self, event):
         if set(self.selected_nodes) != set([node.id for tree_item, node in self.tree_items
@@ -78,7 +83,7 @@ class Preferences(QDialog, Ui_Settings):
         self.reset_tree_widget()
         event.accept()
 
-    def set_containing_folder(self):
+    def set_containing_folder(self, save_setting=False):
         new_containing_folder = QFileDialog.getExistingDirectory(self, "Choose where to place OSF folder")
         osf_path = os.path.join(new_containing_folder, "OSF")
 
@@ -94,11 +99,21 @@ class Preferences(QDialog, Ui_Settings):
             return
 
         user = Session().query(User).one()
+
+        if save_setting:
+            # copy the synced folders from the old to new location
+            # so OSF doesn't think they were deleted
+            copy_tree(user.folder, os.path.join(osf_path))
+
         user.folder = os.path.join(osf_path)
 
         self.containingFolderTextEdit.setText(self._translate("Preferences", self.containing_folder))
         self.open_window(tab=Preferences.GENERAL)  # todo: dynamically update ui????
         self.containing_folder_updated_signal.emit(new_containing_folder)
+
+        if save_setting:
+            save(Session())
+            self.update_sync_nodes()
 
     def update_sync_nodes(self):
         self.selected_nodes = []

@@ -18,3 +18,8 @@ TFA_PROMPT = '''
 Please enter a two-factor authentication code.\n
 (check your mobile device)
 '''
+
+CONFIRM_CHANGE_FOLDER = '''
+Are you sure that you want to change the location of your OSF folder? This will delete the contents of your current OSF folder
+and resync your projects into the new location. You will lose any changes you've made since your last sync.
+'''
