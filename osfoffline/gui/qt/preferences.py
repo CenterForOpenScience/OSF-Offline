@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import configparser
 from distutils.dir_util import copy_tree
 
 from PyQt5 import QtCore
@@ -81,6 +82,7 @@ class Preferences(QDialog, Ui_Settings):
         self.pushButton.clicked.connect(self.sync_all)
         self.pushButton_2.clicked.connect(self.sync_none)
         self.tabWidget.currentChanged.connect(self.selector)
+        self.optOutLogging.stateChanged.connect(self.change_logging)
         self.labelVersion.setText('OSF Sync v{}'.format(osfoffline.__version__))
 
         if ON_WINDOWS:
@@ -94,6 +96,20 @@ class Preferences(QDialog, Ui_Settings):
 
         self._executor = QtCore.QThread()
         self.node_fetcher = NodeFetcher()
+
+    def change_logging(self):
+        config = configparser.ConfigParser()
+        # path relative to start.py
+        user_setting_file = 'osfoffline/settings/user-settings.ini'
+
+        config.read(user_setting_file)
+        if self.optOutLogging.isChecked():
+            config.set('main', 'allow', 'False')
+        else:
+            config.set('main', 'allow', 'True')
+
+        with open(user_setting_file, 'w') as fp:
+                config.write(fp)
 
     def on_first_boot(self):
         self.startAtBoot.setChecked(True)

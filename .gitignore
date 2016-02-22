@@ -66,3 +66,4 @@ __pycache__/
 dumbdir/
 
 osfoffline/settings/local.py
+osfoffline/settings/user-settings.ini
