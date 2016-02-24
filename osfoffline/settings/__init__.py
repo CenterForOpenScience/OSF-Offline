@@ -56,7 +56,9 @@ LOGGING_CONFIG = {
 config = configparser.ConfigParser()
 
 # path relative to start.py
-config.read('osfoffline/settings/user-settings.ini')
+user_setting_file = os.path.join(os.getcwd(), 'osfoffline/settings/user-settings.ini')
+
+config.read(user_setting_file)
 allow_logging = config.getboolean('main', 'allow')
 
 if allow_logging:

@@ -100,7 +100,7 @@ class Preferences(QDialog, Ui_Settings):
     def change_logging(self):
         config = configparser.ConfigParser()
         # path relative to start.py
-        user_setting_file = 'osfoffline/settings/user-settings.ini'
+        user_setting_file = os.path.join(os.getcwd(), 'osfoffline/settings/user-settings.ini')
 
         config.read(user_setting_file)
         if self.optOutLogging.isChecked():
