@@ -62,7 +62,7 @@ config.read(user_setting_file)
 try:
     allow_logging = config.getboolean('main', 'allow')
 except configparser.NoSectionError:
-    logger.execption('Cannot open user settings file. Make sure you have copied user-settings-dist.ini to user-settings.ini')
+    logger.exception('Cannot open user settings file. Make sure you have copied user-settings-dist.ini to user-settings.ini')
 else:
     if allow_logging:
         raven_client = raven.Client(dsn=SENTRY_DSN, VERSION=VERSION, refs=refs)
