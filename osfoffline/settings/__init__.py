@@ -56,12 +56,15 @@ LOGGING_CONFIG = {
 config = configparser.ConfigParser()
 
 # path relative to start.py
-user_setting_file = os.path.join(os.getcwd(), 'osfoffline/settings/user-settings.ini')
+user_setting_file = os.path.join(os.getcwd(), '/settings/user-settings.ini')
 
 config.read(user_setting_file)
-allow_logging = config.getboolean('main', 'allow')
-
-if allow_logging:
-    raven_client = raven.Client(dsn=SENTRY_DSN, VERSION=VERSION, refs=refs)
-    handler = SentryHandler(raven_client, level='ERROR')
-    raven.conf.setup_logging(handler)
+try:
+    allow_logging = config.getboolean('main', 'allow')
+except configparser.NoSectionError:
+    logger.execption('Cannot open user settings file. Make sure you have copied user-settings-dist.ini to user-settings.ini')
+else:
+    if allow_logging:
+        raven_client = raven.Client(dsn=SENTRY_DSN, VERSION=VERSION, refs=refs)
+        handler = SentryHandler(raven_client, level='ERROR')
+        raven.conf.setup_logging(handler)
