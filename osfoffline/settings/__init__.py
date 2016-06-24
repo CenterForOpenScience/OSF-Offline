@@ -1,4 +1,5 @@
 import logging
+import configparser
 
 # Must import in order to be included by PyInstaller
 import raven
@@ -51,7 +52,22 @@ LOGGING_CONFIG = {
 
 # Add Sentry logging separately, so that we can access the client and modify context variables later
 # This allows us to send additional data to Sentry (like username, when the user is logged in)
-# TODO: We should allow the user to choose whether they log to sentry
-raven_client = raven.Client(dsn=SENTRY_DSN, VERSION=VERSION, refs=refs)
-handler = SentryHandler(raven_client, level='ERROR')
-raven.conf.setup_logging(handler)
+
+config = configparser.ConfigParser()
+
+# path relative to start.py
+user_setting_file = os.path.join(os.getcwd(), '/settings/user-settings.ini')
+
+config.read(user_setting_file)
+
+# default to allow it
+allow_logging = True
+try:
+    allow_logging = config.getboolean('main', 'allow')
+except configparser.NoSectionError:
+    logger.exception('Cannot open user settings file. Make sure you have copied user-settings-dist.ini to user-settings.ini')
+finally:
+    if allow_logging:
+        raven_client = raven.Client(dsn=SENTRY_DSN, VERSION=VERSION, refs=refs)
+        handler = SentryHandler(raven_client, level='ERROR')
+        raven.conf.setup_logging(handler)

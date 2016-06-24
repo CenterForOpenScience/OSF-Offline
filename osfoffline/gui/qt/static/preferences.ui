@@ -63,6 +63,22 @@
              <bool>true</bool>
             </property>
            </widget>
+           <widget class="QCheckBox" name="optOutLogging">
+            <property name="geometry">
+             <rect>
+              <x>10</x>
+              <y>80</y>
+              <width>541</width>
+              <height>22</height>
+             </rect>
+            </property>
+            <property name="text">
+             <string>Opt out of error logging</string>
+            </property>
+            <property name="checked">
+             <bool>false</bool>
+            </property>
+           </widget>
           </widget>
          </item>
          <item row="1" column="0">
