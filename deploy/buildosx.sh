@@ -1,1 +1,1 @@
-rm -f "./dist/OSF Sync Installer.dmg"; pyinstaller --onedir --onefile --name='OSF Sync' --icon=deploy/images/cos_logo.icns --windowed start.py  && appdmg "./deploy/dmg-build.json" "./dist/OSF Sync Installer.dmg"
+rm -f "./dist/OSF Sync Installer.dmg"; pyinstaller --onedir --onefile --name='OSF Sync' --icon=deploy/images/cos_logo.ico --windowed start.py  && appdmg "./deploy/dmg-build.json" "./dist/OSF Sync Installer.dmg"
